@@ -5,7 +5,7 @@ use nado_sdk::utils::private_key::private_key;
 #[tokio::main]
 async fn main() {
     // client with no signer
-    let mut client = NadoClient::new(ClientMode::SepoliaTest);
+    let mut client = NadoClient::new(ClientMode::Local);
 
     // client with signing enabled
     client = client.with_signer(private_key()).await.unwrap();

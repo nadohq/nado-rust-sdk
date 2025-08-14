@@ -7,7 +7,7 @@ async fn main() {
     // paste private key or set RUST_SDK_PRIVATE_KEY in .env file
     let private_key = private_key();
 
-    let client = NadoClient::new(ClientMode::SepoliaTest)
+    let client = NadoClient::new(ClientMode::Local)
         .with_signer(private_key)
         .await
         .unwrap();

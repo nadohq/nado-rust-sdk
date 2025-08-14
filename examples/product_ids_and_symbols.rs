@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() {
-    let client = NadoClient::new(ClientMode::SepoliaTest);
+    let client = NadoClient::new(ClientMode::Local);
 
     // optionally specify product type or specific symbol
     let spot_symbols = client

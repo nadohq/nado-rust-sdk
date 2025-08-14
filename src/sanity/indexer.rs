@@ -8,7 +8,7 @@ use crate::utils::time::timestamp;
 use eyre::Result;
 
 pub async fn indexer_sanity_check() -> Result<()> {
-    let client = NadoClient::new(ClientMode::SepoliaTest)
+    let client = NadoClient::new(ClientMode::Local)
         .with_signer(private_key())
         .await?;
     let funding_rate = client.get_funding_rate(1).await?;

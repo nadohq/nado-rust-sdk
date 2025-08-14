@@ -6,7 +6,7 @@ use nado_sdk::utils::time::timestamp;
 
 #[tokio::main]
 async fn main() {
-    let client = NadoClient::new(ClientMode::SepoliaTest)
+    let client = NadoClient::new(ClientMode::Local)
         .with_signer(private_key())
         .await
         .unwrap();

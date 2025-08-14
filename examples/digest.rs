@@ -7,7 +7,7 @@ use nado_sdk::utils::private_key::private_key;
 /// Example showing how to get an order digest before placing an order
 #[tokio::main]
 async fn main() {
-    let client = NadoClient::new(ClientMode::SepoliaTest)
+    let client = NadoClient::new(ClientMode::Local)
         .with_signer(private_key())
         .await
         .unwrap();
