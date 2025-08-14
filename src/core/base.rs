@@ -11,10 +11,10 @@ use eyre::Result;
 use crate::eip712_structs::{concat_to_bytes32, to_bytes12};
 
 use crate::utils::client_utils::validate_subaccount_name;
-use crate::utils::signer::VertexSigner;
+use crate::utils::signer::NadoSigner;
 
 #[async_trait]
-pub trait VertexBase: Clone + Sync {
+pub trait NadoBase: Clone + Sync {
     async fn with_signer(&self, private_key: String) -> Result<Self>;
 
     fn with_subaccount_name(&self, subaccount_name: &str) -> Self {
@@ -38,8 +38,8 @@ pub trait VertexBase: Clone + Sync {
 
     fn subaccount_name_bytes(&self) -> [u8; 12];
 
-    fn signer(&self) -> VertexSigner<Self> {
-        VertexSigner::new(self)
+    fn signer(&self) -> NadoSigner<Self> {
+        NadoSigner::new(self)
     }
 
     fn endpoint_signature<T: Eip712 + Send + Sync + Debug>(
@@ -56,8 +56,6 @@ pub trait VertexBase: Clone + Sync {
     fn querier_addr(&self) -> H160;
 
     fn chain_id(&self) -> Result<U256>;
-
-    fn book_addr(&self, product_id: u32) -> Result<H160>;
 
     fn is_rest_client(&self) -> bool;
 }

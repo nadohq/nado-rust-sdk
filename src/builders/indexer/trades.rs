@@ -5,12 +5,12 @@ use crate::indexer::{TradesParams, TradesResponse};
 use crate::serialize_utils::{WrappedU32, WrappedU64};
 use crate::utils::client_error::none_error;
 
-use crate::core::indexer::VertexIndexer;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::core::indexer::NadoIndexer;
+use crate::{build_and_call, fields_to_vars, nado_builder};
 
-vertex_builder!(
+nado_builder!(
     TradesParamsBuilder,
-    VertexIndexer,
+    NadoIndexer,
     ticker_id: String,
     max_trade_id: u64,
     limit: u32;

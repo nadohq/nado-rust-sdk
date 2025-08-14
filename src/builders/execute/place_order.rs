@@ -9,13 +9,13 @@ use crate::trigger::{PlaceTriggerOrder, TriggerCriteria};
 use crate::tx::get_eip712_digest;
 use crate::utils::client_error::none_error;
 
-use crate::core::execute::VertexExecute;
+use crate::core::execute::NadoExecute;
 use crate::utils::nonce::order_nonce;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 
-vertex_builder!(
+nado_builder!(
     PlaceOrderBuilder,
-    VertexExecute,
+    NadoExecute,
     product_id: u32,
     price_x18: i128,
     linked_sender: [u8; 32],
@@ -25,8 +25,12 @@ vertex_builder!(
     reduce_only: bool,
     trigger_criteria: TriggerCriteria,
     nonce: u64,
+    appendix: u128,
     recv_time: u64,
+    isolated: bool,
+    margin: i128,
     spot_leverage: bool,
+    borrow_margin: bool,
     mock_digest_and_signature: bool,
     id: u64;
 
@@ -34,7 +38,7 @@ vertex_builder!(
     build_and_call!(self, execute, place_order => Option<PlaceOrderResponse>);
 
     pub async fn execute_trigger(&self) -> Result<Option<PlaceOrderResponse>> {
-        self.vertex.place_trigger_order(self.build_trigger()?).await
+        self.nado.place_trigger_order(self.build_trigger()?).await
     }
 
     pub fn build(&self) -> Result<PlaceOrder> {
@@ -51,6 +55,7 @@ vertex_builder!(
             digest: Some(digest),
             id,
             spot_leverage: self.spot_leverage,
+            borrow_margin: self.borrow_margin,
         })
     }
 
@@ -70,6 +75,7 @@ vertex_builder!(
             product_id,
             digest: Some(TxHash(digest)),
             spot_leverage: self.spot_leverage,
+            borrow_margin: self.borrow_margin,
             trigger,
             id: self.id
         })
@@ -78,10 +84,10 @@ vertex_builder!(
     fn get_signature(&self, product_id: u32, order: &eip712_structs::Order) -> Result<Vec<u8>> {
         if self.should_mock_digest_and_signature() {
             let mut signature = vec![0; 65];
-            signature.extend(self.vertex.address()?);
+            signature.extend(self.nado.address()?);
             Ok(signature)
         } else {
-            self.vertex.signer().order_signature(product_id, order)
+            self.nado.signer().order_signature(product_id, order)
         }
     }
 
@@ -94,7 +100,7 @@ vertex_builder!(
     }
 
     fn encode_digest(&self, order: &eip712_structs::Order) -> Result<[u8; 32]> {
-        let domain = self.vertex.signer().order_domain(self.get_product_id()?)?;
+        let domain = self.nado.signer().order_domain(self.get_product_id()?)?;
         let encoded = get_eip712_digest(order, &domain);
         Ok(encoded.to_fixed_bytes())
     }
@@ -128,18 +134,23 @@ vertex_builder!(
     fn order_inner(&self) -> Result<eip712_structs::Order> {
         fields_to_vars!(self, amount, price_x18, reduce_only, (order_type: clone));
 
-        let mut expiration = self.expiration.ok_or(none_error("expiration"))?;
+        let expiration = self.expiration.ok_or(none_error("expiration"))?;
+        let mut appendix = self.appendix.unwrap_or(ORDER_VERSION as u128);
 
-        expiration = order_type.apply_to_expiration(expiration);
         if reduce_only {
-            expiration |= 1 << 61;
+            appendix |= 1 << 11;
         }
-        let mut nonce = self.nonce.unwrap_or(order_nonce(self.recv_time));
+        if self.isolated.is_some() && self.isolated.unwrap() {
+            appendix |= 1 << 8;
+            appendix |= (self.margin.unwrap() as u128) << 32;
+        }
+        appendix |= order_type.appendix_bit();
+        let nonce = self.nonce.unwrap_or(order_nonce(self.recv_time));
         if self.trigger_criteria.is_some() {
-            nonce |= 1 << 63;
+            appendix |= 1 << 12;
         }
 
-        let default_sender = self.vertex.subaccount()?;
+        let default_sender = self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);
 
         Ok(eip712_structs::Order::from_binding(&endpoint::Order {
@@ -148,6 +159,7 @@ vertex_builder!(
             amount,
             expiration,
             nonce,
+            appendix,
         }))
     }
 
@@ -166,3 +178,5 @@ fn random_digest() -> [u8; 32] {
     rand::Rng::fill(&mut rand::thread_rng(), &mut arr[..]);
     arr
 }
+
+const ORDER_VERSION: u8 = 0;

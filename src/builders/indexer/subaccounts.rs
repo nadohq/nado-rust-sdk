@@ -1,15 +1,15 @@
-use crate::core::indexer::VertexIndexer;
+use crate::core::indexer::NadoIndexer;
 use crate::utils::wrapped_option_utils::wrapped_option_u64;
-use crate::{build_and_call, vertex_builder};
+use crate::{build_and_call, nado_builder};
 use ethers::prelude::H160;
 use eyre::Result;
 
 use crate::indexer;
 use crate::indexer::SubaccountsResponse;
 
-vertex_builder!(
+nado_builder!(
     SubaccountsBuilder,
-    VertexIndexer,
+    NadoIndexer,
     address: [u8; 20],
     start: u64,
     limit: u64;

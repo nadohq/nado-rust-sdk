@@ -1,16 +1,16 @@
-use crate::core::indexer::VertexIndexer;
+use crate::core::indexer::NadoIndexer;
 use crate::serialize_utils::WrappedU32;
 use crate::utils::wrapped_option_utils::wrapped_option_u64;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 use eyre::Result;
 
 use crate::indexer;
 use crate::indexer::ProductsResponse;
 use crate::utils::client_error::none_error;
 
-vertex_builder!(
+nado_builder!(
     ProductSnapshotsBuilder ,
-    VertexIndexer,
+    NadoIndexer,
     product_id: u32,
     max_time: u64,
     limit: u32,

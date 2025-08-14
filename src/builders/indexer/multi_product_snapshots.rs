@@ -2,16 +2,16 @@ use std::collections::HashMap;
 
 use eyre::Result;
 
-use crate::core::indexer::VertexIndexer;
+use crate::core::indexer::NadoIndexer;
 use crate::indexer;
 use crate::indexer::{ProductSnapshot, TimestampOrTimestamps};
 use crate::serialize_utils::{WrappedU32, WrappedU64};
 use crate::utils::client_error::none_error;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 
-vertex_builder!(
+nado_builder!(
     MultiProductSnapshotsBuilder,
-    VertexIndexer,
+    NadoIndexer,
     product_ids: Vec<u32>,
     max_time: u64,
     timestamps: Vec<u64>;

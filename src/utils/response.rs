@@ -8,7 +8,7 @@ use crate::utils::client_error::ClientError;
 
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
-pub enum VertexRestResponse<R> {
+pub enum NadoRestResponse<R> {
     Success(R),
     IPBlocked(CloudflareIPResponse),
     IndexerError(IndexerError),
@@ -16,15 +16,15 @@ pub enum VertexRestResponse<R> {
     Unknown(Value),
 }
 
-impl<R: DeserializeOwned + Send> VertexRestResponse<R> {
+impl<R: DeserializeOwned + Send> NadoRestResponse<R> {
     pub fn extract_response(self) -> Result<R> {
         match self {
-            VertexRestResponse::Success(response) => Ok(response),
-            VertexRestResponse::IndexerError(error) => Err(eyre!(error.error)),
-            VertexRestResponse::IPBlocked(response) => {
+            NadoRestResponse::Success(response) => Ok(response),
+            NadoRestResponse::IndexerError(error) => Err(eyre!(error.error)),
+            NadoRestResponse::IPBlocked(response) => {
                 Err(eyre!(ClientError::IPBlocked(format!("{:?}", response))))
             }
-            VertexRestResponse::Unknown(value) => Ok(serde_json::from_value(value)?),
+            NadoRestResponse::Unknown(value) => Ok(serde_json::from_value(value)?),
         }
     }
 }

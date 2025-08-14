@@ -6,18 +6,18 @@ pub mod utils;
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! vertex_builder {
+macro_rules! nado_builder {
     ($name:ident, $trait_bounds:ident, $($field:ident: $ftype:ty),*; $($custom_impl:tt)*) => {
         #[derive(Clone)]
         pub struct $name<'a, V: $trait_bounds> {
-            vertex: &'a V,
+            nado: &'a V,
             $( $field: Option<$ftype>, )*
         }
 
         impl<'a, V: $trait_bounds> $name<'a, V> {
-            pub fn new(vertex: &'a V) -> Self {
+            pub fn new(nado: &'a V) -> Self {
                 Self {
-                    vertex,
+                    nado,
                     $( $field: None, )*
                 }
             }
@@ -41,12 +41,12 @@ macro_rules! vertex_builder {
 macro_rules! build_and_call {
     ($instance:ident, $method_name:ident, $call:ident => $output_type:ty, async_build) => {
         pub async fn $method_name(&$instance) -> Result<$output_type> {
-            $instance.vertex.$call($instance.build().await?).await
+            $instance.nado.$call($instance.build().await?).await
         }
     };
     ($instance:ident, $method_name:ident, $execute_call:ident => $output_type:ty) => {
         pub async fn $method_name(&$instance) -> Result<$output_type> {
-            $instance.vertex.$execute_call($instance.build()?).await
+            $instance.nado.$execute_call($instance.build()?).await
         }
     };
 }

@@ -1,13 +1,13 @@
-use crate::core::VertexQuery;
+use crate::core::NadoQuery;
 use crate::engine::FeeRatesResponse;
 use crate::math::{div_x18, mul_x18, to_i128_x18};
 use crate::utils::client_error::none_error;
-use crate::{fields_to_vars, vertex_builder};
+use crate::{fields_to_vars, nado_builder};
 use eyre::Result;
 
-vertex_builder!(
+nado_builder!(
     FeeCalculator,
-    VertexQuery,
+    NadoQuery,
     subaccount: [u8; 32],
     product_id: u32,
     amount: i128,
@@ -36,8 +36,8 @@ vertex_builder!(
     }
 
     async fn get_fee_rates(&self) -> Result<FeeRatesResponse> {
-        let subaccount = self.subaccount.unwrap_or(self.vertex.subaccount()?);
-        self.vertex.get_fee_rates(subaccount).await
+        let subaccount = self.subaccount.unwrap_or(self.nado.subaccount()?);
+        self.nado.get_fee_rates(subaccount).await
     }
 
     fn get_keep_rate(&self, fee_rates: &FeeRatesResponse) -> Result<i128> {

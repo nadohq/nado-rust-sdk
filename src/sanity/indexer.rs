@@ -1,14 +1,14 @@
 use crate::indexer::Limit;
+use crate::nado_client::NadoClient;
 use crate::prelude::*;
 use crate::print_json;
 use crate::serialize_utils::WrappedU32;
 use crate::utils::private_key::private_key;
 use crate::utils::time::timestamp;
-use crate::vertex_client::VertexClient;
 use eyre::Result;
 
 pub async fn indexer_sanity_check() -> Result<()> {
-    let client = VertexClient::new(ClientMode::SepoliaTest)
+    let client = NadoClient::new(ClientMode::SepoliaTest)
         .with_signer(private_key())
         .await?;
     let funding_rate = client.get_funding_rate(1).await?;

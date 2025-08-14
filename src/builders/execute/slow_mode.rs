@@ -1,21 +1,19 @@
-use crate::bindings::endpoint::{
-    endpoint, SwapAMM, SwapAMMReturn, UnsignedBurnLpReturn, UnsignedMintLpReturn,
-};
+use crate::bindings::endpoint::endpoint;
 use crate::tx::TxType;
 use ethers::types::Bytes;
 use eyre::Result;
 use std::time::Duration;
 
-use crate::core::execute::VertexExecute;
+use crate::core::execute::NadoExecute;
 use crate::utils::client_error::none_error;
 use crate::utils::constants::DEFAULT_SLOW_MODE_SLEEP_SECS;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 use ethers::abi::AbiEncode;
 use ethers::types::TransactionReceipt;
 
-vertex_builder!(
+nado_builder!(
     SubmitSlowModeTxBuilder,
-    VertexExecute,
+    NadoExecute,
     tx: Bytes,
     mints_fee: bool,
     approves_fee: bool,
@@ -33,31 +31,17 @@ vertex_builder!(
 
     async fn sleep(&self) {
         let sleep_secs = self.sleep_secs.unwrap_or(DEFAULT_SLOW_MODE_SLEEP_SECS);
-        if self.vertex.is_rest_client() {
+        if self.nado.is_rest_client() {
             tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
         }
     }
 
-
-    pub fn swap_amm_tx(&self, swap_amm: SwapAMM) -> Self {
-        let tx = swap_amm_bytes(swap_amm);
-        self.tx(tx)
-    }
 
     pub fn withdraw_collateral_tx(&self, withdraw_collateral: endpoint::WithdrawCollateral) -> Self {
         let tx = withdraw_collateral_bytes(withdraw_collateral);
         self.tx(tx)
     }
 
-    pub fn mint_lp_tx(&self, mint_lp_tx: endpoint::MintLp) -> Self {
-        let tx = mint_lp_bytes(mint_lp_tx);
-        self.tx(tx)
-    }
-
-    pub fn burn_lp_tx(&self, burn_lp_tx: endpoint::BurnLp) -> Self {
-        let tx = burn_lp_bytes(burn_lp_tx);
-        self.tx(tx)
-    }
 
     pub fn liquidate_subaccount_tx(&self, liquidate_subaccount_tx: endpoint::LiquidateSubaccount) -> Self {
         let tx = liquidate_subaccount_bytes(liquidate_subaccount_tx);
@@ -88,48 +72,12 @@ pub struct SubmitSlowModeTxParams {
     pub gas_price: Option<u128>,
 }
 
-fn swap_amm_bytes(swap_amm: endpoint::SwapAMM) -> Bytes {
-    let swap_amm_return = SwapAMMReturn(swap_amm);
-
-    Bytes::from(
-        [
-            vec![TxType::SwapAMM as u8],
-            AbiEncode::encode(swap_amm_return),
-        ]
-        .concat(),
-    )
-}
-
 fn withdraw_collateral_bytes(withdraw_collateral: endpoint::WithdrawCollateral) -> Bytes {
     let withdraw_tx_bytes = AbiEncode::encode(endpoint::UnsignedWithdrawCollateralReturn(
         withdraw_collateral,
     ));
 
     Bytes::from([vec![TxType::WithdrawCollateral as u8], withdraw_tx_bytes].concat())
-}
-
-fn mint_lp_bytes(mint_lp: endpoint::MintLp) -> Bytes {
-    let mint_lp_return = UnsignedMintLpReturn(mint_lp);
-
-    Bytes::from(
-        [
-            vec![TxType::MintLp as u8],
-            AbiEncode::encode(mint_lp_return),
-        ]
-        .concat(),
-    )
-}
-
-fn burn_lp_bytes(burn_lp: endpoint::BurnLp) -> Bytes {
-    let burn_lp_return = UnsignedBurnLpReturn(burn_lp);
-
-    Bytes::from(
-        [
-            vec![TxType::BurnLp as u8],
-            AbiEncode::encode(burn_lp_return),
-        ]
-        .concat(),
-    )
 }
 
 fn liquidate_subaccount_bytes(liquidate_subaccount: endpoint::LiquidateSubaccount) -> Bytes {

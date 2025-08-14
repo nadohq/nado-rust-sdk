@@ -1,17 +1,17 @@
-use crate::core::indexer::VertexIndexer;
+use crate::core::indexer::NadoIndexer;
 use crate::utils::wrapped_option_utils::{
     wrapped_option_bytes32, wrapped_option_u64, wrapped_option_vec_bytes32, wrapped_option_vec_u32,
 };
-use crate::{build_and_call, vertex_builder};
+use crate::{build_and_call, nado_builder};
 use eyre::{eyre, Result};
 
 use crate::indexer;
 use crate::indexer::OrdersResponse;
 use crate::serialize_utils::WrappedU32;
 
-vertex_builder!(
+nado_builder!(
     HistoricalOrdersBuilder,
-    VertexIndexer,
+    NadoIndexer,
     subaccount: [u8; 32],
     product_ids: Vec<u32>,
     max_time: u64,

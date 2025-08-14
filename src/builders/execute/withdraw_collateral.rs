@@ -4,13 +4,13 @@ use eyre::Result;
 use crate::bindings::endpoint;
 use crate::eip712_structs;
 
-use crate::core::execute::VertexExecute;
+use crate::core::execute::NadoExecute;
 use crate::utils::client_error::none_error;
-use crate::{fields_to_vars, vertex_builder};
+use crate::{fields_to_vars, nado_builder};
 
-vertex_builder!(
+nado_builder!(
     WithdrawCollateralBuilder,
-    VertexExecute,
+    NadoExecute,
     amount: u128,
     product_id: u32,
     nonce: u64,
@@ -19,7 +19,7 @@ vertex_builder!(
 
     // we do not use macro here because of extra required argument
     pub async fn execute(&self) -> Result<()> {
-        self.vertex
+        self.nado
             .withdraw_collateral(self.build().await?, self.spot_leverage)
             .await
     }
@@ -37,12 +37,12 @@ vertex_builder!(
     }
 
     pub async fn build(&self) -> Result<eip712_structs::WithdrawCollateral> {
-        let default_sender = self.vertex.subaccount()?;
+        let default_sender = self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);
         let address = H160::from_slice(&sender[0..20]).0;
         let nonce = self
             .nonce
-            .unwrap_or(self.vertex.next_tx_nonce(address).await?);
+            .unwrap_or(self.nado.next_tx_nonce(address).await?);
         fields_to_vars!(self, amount, product_id);
 
         Ok(eip712_structs::WithdrawCollateral {

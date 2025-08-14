@@ -11,13 +11,13 @@ use crate::math::ONE_X6;
 use crate::tx::TxType;
 
 use crate::builders::execute::slow_mode::SubmitSlowModeTxParams;
-use crate::core::execute::VertexExecute;
+use crate::core::execute::NadoExecute;
 use crate::utils::client_error::none_error;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 
-vertex_builder!(
+nado_builder!(
     DepositInsuranceBuilder,
-    VertexExecute,
+    NadoExecute,
     amount: u128,
     mints_tokens: bool,
     approves_allowance: bool,
@@ -26,7 +26,7 @@ vertex_builder!(
 
     pub async fn deposit_and_await_balance(&self) -> Result<Option<TransactionReceipt>> {
         let expected_balance = self.calculate_expected_balance().await?;
-        if self.vertex.is_rest_client() {
+        if self.nado.is_rest_client() {
             self.handle_erc20().await?;
         }
         let tx_hash = self.execute().await?;
@@ -38,11 +38,11 @@ vertex_builder!(
         fields_to_vars!(self, amount);
         let sleep = self.erc20_sleep_secs.unwrap_or_default();
         if self.mints_tokens.unwrap_or(false) {
-            self.vertex.mint_mock_erc20(0, amount).await?;
+            self.nado.mint_mock_erc20(0, amount).await?;
             tokio::time::sleep(Duration::from_secs(sleep)).await;
         }
         if self.approves_allowance.unwrap_or(false) {
-            self.vertex.approve_endpoint_allowance(0, amount).await?;
+            self.nado.approve_endpoint_allowance(0, amount).await?;
             tokio::time::sleep(Duration::from_secs(sleep)).await;
         }
         Ok(())
@@ -52,7 +52,7 @@ vertex_builder!(
         fields_to_vars!(self, amount);
         let mut amount = amount as i128 / ONE_X6;
         amount = to_i128_x18(amount);
-        let pre_balance = self.vertex.get_insurance().await?.insurance;
+        let pre_balance = self.nado.get_insurance().await?.insurance;
 
         Ok(pre_balance + amount)
     }
@@ -60,7 +60,7 @@ vertex_builder!(
     async fn await_expected_balance(&self, expected_balance: i128) -> Result<()> {
         loop {
             println!("waiting for deposit...");
-            let insurance = self.vertex.get_insurance().await?.insurance;
+            let insurance = self.nado.get_insurance().await?.insurance;
             if insurance >= expected_balance {
                 return Ok(());
             }

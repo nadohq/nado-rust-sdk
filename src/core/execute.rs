@@ -8,16 +8,15 @@ use crate::bindings::endpoint::Endpoint;
 use crate::bindings::querier::Querier;
 use crate::builders::execute::deposit_collateral::DepositCollateralParams;
 use crate::builders::execute::slow_mode::SubmitSlowModeTxParams;
-use crate::core::query::VertexQuery;
+use crate::core::query::NadoQuery;
 use crate::eip712_structs::{
-    BurnLp, BurnVlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintLp,
-    MintVlp, TransferQuote, WithdrawCollateral,
+    BurnVlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintVlp,
+    TransferQuote, WithdrawCollateral,
 };
 use crate::engine::{
-    CancelOrdersResponse, Execute, ExecuteResponseData, PlaceIsolatedOrder, PlaceOrder,
-    PlaceOrderResponse,
+    CancelOrdersResponse, Execute, ExecuteResponseData, PlaceOrder, PlaceOrderResponse,
 };
-use crate::provider::VertexProvider;
+use crate::provider::NadoProvider;
 use crate::trigger;
 use crate::utils::deposit::{erc20_client, provider_with_signer};
 use crate::utils::response::match_cancel_orders_response;
@@ -35,7 +34,7 @@ macro_rules! map_response_type {
 }
 
 #[async_trait]
-pub trait VertexExecute: VertexQuery {
+pub trait NadoExecute: NadoQuery {
     async fn execute(&self, execute: Execute) -> Result<Option<ExecuteResponseData>>;
 
     async fn execute_trigger(
@@ -50,15 +49,6 @@ pub trait VertexExecute: VertexQuery {
 
     async fn place_order(&self, place_order: PlaceOrder) -> Result<Option<PlaceOrderResponse>> {
         let execute = Execute::PlaceOrder(place_order);
-        let execute_response_data = self.execute(execute).await?;
-        map_response_type!(execute_response_data, ExecuteResponseData::PlaceOrder => PlaceOrderResponse)
-    }
-
-    async fn place_isolated_order(
-        &self,
-        place_isolated_order: PlaceIsolatedOrder,
-    ) -> Result<Option<PlaceOrderResponse>> {
-        let execute = Execute::PlaceIsolatedOrder(place_isolated_order);
         let execute_response_data = self.execute(execute).await?;
         map_response_type!(execute_response_data, ExecuteResponseData::PlaceOrder => PlaceOrderResponse)
     }
@@ -164,24 +154,6 @@ pub trait VertexExecute: VertexQuery {
         Ok(())
     }
 
-    async fn mint_lp(&self, tx: MintLp, spot_leverage: Option<bool>) -> Result<()> {
-        let signature = self.endpoint_signature(&tx)?;
-        let execute = Execute::MintLp {
-            tx,
-            signature,
-            spot_leverage,
-        };
-        self.execute(execute).await?;
-        Ok(())
-    }
-
-    async fn burn_lp(&self, tx: BurnLp) -> Result<()> {
-        let signature = self.endpoint_signature(&tx)?;
-        let execute = Execute::BurnLp { tx, signature };
-        self.execute(execute).await?;
-        Ok(())
-    }
-
     async fn transfer_quote(&self, tx: TransferQuote) -> Result<()> {
         let signature = self.endpoint_signature(&tx)?;
         let execute = Execute::TransferQuote { tx, signature };
@@ -192,12 +164,6 @@ pub trait VertexExecute: VertexQuery {
     async fn link_signer(&self, tx: LinkSigner) -> Result<()> {
         let signature = self.endpoint_signature(&tx)?;
         let execute = Execute::LinkSigner { tx, signature };
-        self.execute(execute).await?;
-        Ok(())
-    }
-
-    async fn submit_private_batch(&self, orders: Vec<[PlaceOrder; 2]>) -> Result<()> {
-        let execute = Execute::SubmitPrivateBatch { orders };
         self.execute(execute).await?;
         Ok(())
     }
@@ -290,13 +256,13 @@ pub trait VertexExecute: VertexQuery {
         Ok(tx_receipt)
     }
 
-    fn endpoint(&self) -> Result<Endpoint<VertexProvider>> {
+    fn endpoint(&self) -> Result<Endpoint<NadoProvider>> {
         let provider = provider_with_signer(self)?;
         let endpoint = Endpoint::new(self.endpoint_addr(), provider);
         Ok(endpoint)
     }
 
-    fn querier(&self) -> Result<Querier<VertexProvider>> {
+    fn querier(&self) -> Result<Querier<NadoProvider>> {
         let provider = provider_with_signer(self)?;
         let endpoint = Querier::new(self.querier_addr(), provider);
         Ok(endpoint)

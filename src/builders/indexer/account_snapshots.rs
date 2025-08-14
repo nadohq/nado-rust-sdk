@@ -1,15 +1,15 @@
 use eyre::Result;
 
-use crate::core::indexer::VertexIndexer;
+use crate::core::indexer::NadoIndexer;
 use crate::indexer;
 use crate::indexer::AccountSnapshotsResponse;
 use crate::serialize_utils::{WrappedBytes32, WrappedU64};
 use crate::utils::client_error::none_error;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 
-vertex_builder!(
+nado_builder!(
     AccountSnapshotsBuilder,
-    VertexIndexer,
+    NadoIndexer,
     subaccounts: Vec<[u8; 32]>,
     timestamps: Vec<u64>,
     isolated: bool;

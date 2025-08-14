@@ -1,27 +1,27 @@
-# Vertex Protocol Rust SDK
+# Nado Protocol Rust SDK
 
 [![Crates.io][crates-img]][crates-url]
 
-This is the Rust SDK for the [Vertex Protocol API](https://vertex-protocol.gitbook.io/docs/developer-resources/api).
+This is the Rust SDK for the [Nado Protocol API](TODO).
 
-[Documentation](https://docs.rs/vertex-sdk/latest/vertex_sdk/)
+[Documentation](TODO)
 
 ## Quickstart
 
 Instantiate a client on the chain you would like to interact with.
-For example, `ClientMode::Prod` to use Arbitrum and `ClientMode::BaseProd` to use Base, etc.
+For example, `ClientMode::InkTest` to use Ink testnet and `ClientMode::InkProd` to use Ink mainnet, etc.
 A signer (private key) is required for executes.
 A signer is not required for queries.
 For requests with many parameters, use the client to build and send requests.
 For simple queries (1-2 params) like `get_market_price`, call directly from the client.
 
-See [`basic_usage.rs`](examples/basic_usage.rs) for an E2E example including depositing into Vertex.
+See [`basic_usage.rs`](examples/basic_usage.rs) for an E2E example including depositing into Nado.
 
 ```rust
-use vertex_sdk::prelude::*;
+use nado_sdk::prelude::*;
 
 async fn main() {
-    let client = VertexClient::new(ClientMode::Prod)
+    let client = NadoClient::new(ClientMode::InkProd)
         .with_signer(private_key())
         .await
         .unwrap();
@@ -60,12 +60,12 @@ Add the following line to your Cargo.toml file:
 
 ```toml
 [dependencies]
-vertex_sdk = "0.3.7"
+nado_sdk = "0.4.0"
 ```
 
 ## Usage
 
-See the [examples](https://github.com/vertex-protocol/vertex-rust-sdk/tree/main/examples) and [sanity](https://github.com/vertex-protocol/vertex-rust-sdk/tree/main/src/sanity) directories.
+See the [examples](https://github.com/nado-protocol/nado-rust-sdk/tree/main/examples) and [sanity](https://github.com/nado-protocol/nado-rust-sdk/tree/main/src/sanity) directories.
 
 ## Running locally
 
@@ -75,5 +75,5 @@ See the [examples](https://github.com/vertex-protocol/vertex-rust-sdk/tree/main/
 - `cargo run -- --query-sanity`: runs sanity checks for engine queries.
 - `cargo run -- --indexer-sanity`: runs sanity checks for indexer queries.
 
-[crates-img]: https://img.shields.io/crates/v/vertex-sdk
-[crates-url]: https://crates.io/crates/vertex-sdk
+[crates-img]: https://img.shields.io/crates/v/nado-sdk
+[crates-url]: https://crates.io/crates/nado-sdk

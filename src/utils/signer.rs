@@ -11,15 +11,15 @@ use eyre::Result;
 
 use crate::tx::{domain, get_eip712_digest};
 
-use crate::core::base::VertexBase;
+use crate::core::base::NadoBase;
 
-pub struct VertexSigner<'a, V: VertexBase> {
-    vertex: &'a V,
+pub struct NadoSigner<'a, V: NadoBase> {
+    nado: &'a V,
 }
 
-impl<'a, V: VertexBase> VertexSigner<'a, V> {
-    pub fn new(vertex: &'a V) -> Self {
-        Self { vertex }
+impl<'a, V: NadoBase> NadoSigner<'a, V> {
+    pub fn new(nado: &'a V) -> Self {
+        Self { nado }
     }
 
     pub fn endpoint_digest<T: Eip712 + Send + Sync + Debug>(&self, tx: &T) -> Result<[u8; 32]> {
@@ -32,7 +32,7 @@ impl<'a, V: VertexBase> VertexSigner<'a, V> {
         &self,
         endpoint_tx: &T,
     ) -> Result<Vec<u8>> {
-        let signature = if self.vertex.is_rest_client() {
+        let signature = if self.nado.is_rest_client() {
             self.endpoint_signature_base(endpoint_tx)?
         } else {
             self.endpoint_signature_concat(endpoint_tx)?
@@ -45,7 +45,7 @@ impl<'a, V: VertexBase> VertexSigner<'a, V> {
         endpoint_tx: &T,
     ) -> Result<Vec<u8>> {
         let mut ret = self.endpoint_signature_base(endpoint_tx)?;
-        ret.extend(self.vertex.address()?);
+        ret.extend(self.nado.address()?);
         Ok(ret)
     }
 
@@ -63,7 +63,7 @@ impl<'a, V: VertexBase> VertexSigner<'a, V> {
         product_id: u32,
         order_tx: &T,
     ) -> Result<Vec<u8>> {
-        let signature = if self.vertex.is_rest_client() {
+        let signature = if self.nado.is_rest_client() {
             self.order_signature_base(product_id, order_tx)?
         } else {
             self.order_signature_concat(product_id, order_tx)?
@@ -77,7 +77,7 @@ impl<'a, V: VertexBase> VertexSigner<'a, V> {
         order_tx: &T,
     ) -> Result<Vec<u8>> {
         let mut ret = self.order_signature_base(product_id, order_tx)?;
-        ret.extend(self.vertex.address()?);
+        ret.extend(self.nado.address()?);
         Ok(ret)
     }
 
@@ -97,19 +97,19 @@ impl<'a, V: VertexBase> VertexSigner<'a, V> {
         domain: EIP712Domain,
     ) -> Result<Signature> {
         let encoded = get_eip712_digest(payload, &domain);
-        Ok(self.vertex.wallet()?.sign_hash(encoded)?)
+        Ok(self.nado.wallet()?.sign_hash(encoded)?)
     }
 
     fn endpoint_domain(&self) -> Result<EIP712Domain> {
-        self.domain(self.vertex.endpoint_addr())
+        self.domain(self.nado.endpoint_addr())
     }
 
     pub fn order_domain(&self, product_id: u32) -> Result<EIP712Domain> {
-        self.domain(self.vertex.book_addr(product_id)?)
+        self.domain(H160::from_low_u64_be(product_id as u64))
     }
 
     fn domain(&self, verifying_contract: H160) -> Result<EIP712Domain> {
-        Ok(domain(self.vertex.chain_id()?, verifying_contract))
+        Ok(domain(self.nado.chain_id()?, verifying_contract))
     }
 }
 

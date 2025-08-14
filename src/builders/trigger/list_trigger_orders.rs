@@ -1,6 +1,6 @@
-use crate::core::query::VertexQuery;
+use crate::core::query::NadoQuery;
 use crate::utils::nonce::default_recv_time;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 use ethers::types::Bytes;
 use eyre::Result;
 
@@ -10,9 +10,9 @@ use crate::trigger::ListTriggerOrdersResponse;
 use crate::utils::client_error::none_error;
 use crate::utils::wrapped_option_utils::{wrapped_option_bytes32, wrapped_option_vec_bytes32};
 
-vertex_builder!(
+nado_builder!(
     ListTriggerOrdersBuilder ,
-    VertexQuery,
+    NadoQuery,
     recv_time: u64,
     product_id: u32,
     linked_sender: [u8; 32],
@@ -27,7 +27,7 @@ vertex_builder!(
     pub fn build(&self) -> Result<trigger::Query> {
         let tx = self.list_trigger_orders()?;
         fields_to_vars!(self, pending);
-        let signature = Bytes::from(self.vertex.endpoint_signature(&tx)?);
+        let signature = Bytes::from(self.nado.endpoint_signature(&tx)?);
 
         Ok(trigger::Query::ListTriggerOrders {
             tx,
@@ -43,7 +43,7 @@ vertex_builder!(
 
 
     fn list_trigger_orders(&self) -> Result<eip712_structs::ListTriggerOrders> {
-        let default_sender =  self.vertex.subaccount()?;
+        let default_sender =  self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);
         let recv_time = self.recv_time.unwrap_or(default_recv_time());
         Ok(eip712_structs::ListTriggerOrders {

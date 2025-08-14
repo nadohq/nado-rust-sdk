@@ -4,11 +4,11 @@ pub mod execute;
 pub mod indexer;
 pub mod query;
 
-pub use base::VertexBase;
-pub use builder::VertexBuilder;
-pub use execute::VertexExecute;
-pub use indexer::VertexIndexer;
-pub use query::VertexQuery;
+pub use base::NadoBase;
+pub use builder::NadoBuilder;
+pub use execute::NadoExecute;
+pub use indexer::NadoIndexer;
+pub use query::NadoQuery;
 
 #[doc(hidden)]
 #[macro_export]

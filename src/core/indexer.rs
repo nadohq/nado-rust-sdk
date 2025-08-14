@@ -5,7 +5,7 @@ use ethers::prelude::H160;
 use eyre::Result;
 use serde::de::DeserializeOwned;
 
-use crate::core::base::VertexBase;
+use crate::core::base::NadoBase;
 use crate::indexer::Query::FastWithdrawalSignature;
 use crate::indexer::{
     AccountSnapshotsResponse, ArbRewardsResponse, CandlesticksResponse, ContractsParams,
@@ -22,7 +22,7 @@ use crate::serialize_utils::{WrappedU32, WrappedU64};
 use crate::utils::wrapped_option_utils::wrapped_option_u64;
 
 #[async_trait]
-pub trait VertexIndexer: VertexBase {
+pub trait NadoIndexer: NadoBase {
     async fn query<R: DeserializeOwned + Send>(&self, query: Query) -> Result<R>;
 
     async fn query_v2<R: DeserializeOwned + Send>(&self, path: &str, query: QueryV2) -> Result<R>;
