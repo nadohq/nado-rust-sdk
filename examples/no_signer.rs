@@ -1,10 +1,10 @@
-use vertex_sdk::math::to_u128_x6;
-use vertex_sdk::prelude::*;
+use nado_sdk::math::to_u128_x6;
+use nado_sdk::prelude::*;
 
 #[tokio::main]
 async fn main() {
     // a client without a signer can make queries
-    let client = VertexClient::new(ClientMode::SepoliaTest);
+    let client = NadoClient::new(ClientMode::Local);
 
     const ARB_PERP: u32 = 6;
     let depth = 10;

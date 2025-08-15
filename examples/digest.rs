@@ -1,13 +1,13 @@
 use ethers::prelude::H256;
 
-use vertex_sdk::math::{f64_to_x18, to_i128_x18};
-use vertex_sdk::prelude::*;
-use vertex_sdk::utils::private_key::private_key;
+use nado_sdk::math::{f64_to_x18, to_i128_x18};
+use nado_sdk::prelude::*;
+use nado_sdk::utils::private_key::private_key;
 
 /// Example showing how to get an order digest before placing an order
 #[tokio::main]
 async fn main() {
-    let client = VertexClient::new(ClientMode::SepoliaTest)
+    let client = NadoClient::new(ClientMode::Local)
         .with_signer(private_key())
         .await
         .unwrap();

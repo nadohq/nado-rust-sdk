@@ -2,15 +2,15 @@ use eyre::Result;
 
 use crate::eip712_structs::OrderType;
 use crate::engine::OrderResponse;
-use crate::math::{f64_to_x18, to_i128_x18, to_u128_x18, to_u128_x6};
+use crate::math::{f64_to_x18, to_i128_x18, to_u128_x6};
 use crate::trigger::TriggerCriteria;
 
 use crate::prelude::*;
 use crate::utils::private_key::private_key;
 
 pub async fn execute_sanity_check() -> Result<()> {
-    println!("setting up vertex client...");
-    let client = VertexClient::new(ClientMode::Local)
+    println!("setting up nado client...");
+    let client = NadoClient::new(ClientMode::Local)
         .with_signer(private_key())
         .await
         .unwrap();
@@ -20,9 +20,6 @@ pub async fn execute_sanity_check() -> Result<()> {
 
     println!("placing and cancelling orders...");
     place_orders(&client).await;
-
-    println!("minting and burning lp...");
-    lp(&client).await;
 
     println!("placing trigger orders...");
     trigger(&client).await;
@@ -34,7 +31,7 @@ pub async fn execute_sanity_check() -> Result<()> {
     Ok(())
 }
 
-async fn deposit(client: &VertexClient) {
+async fn deposit(client: &NadoClient) {
     let product_id = 0;
     let amount = 100000;
     client
@@ -47,7 +44,7 @@ async fn deposit(client: &VertexClient) {
         .unwrap();
 }
 
-async fn place_orders(client: &VertexClient) {
+async fn place_orders(client: &NadoClient) {
     let product_id = 1;
     let place_order_response = client
         .place_order_builder()
@@ -167,61 +164,7 @@ fn orders_contain_digest(digest: [u8; 32], orders: &Vec<OrderResponse>) -> bool 
     orders.iter().any(|order| order.digest == digest)
 }
 
-async fn lp(client: &VertexClient) {
-    let product_id = 3;
-
-    let info = client
-        .get_subaccount_info(client.subaccount().unwrap())
-        .await
-        .unwrap();
-    let pre_balance = info.get_spot_balance(product_id).unwrap();
-
-    let max_lp_mintable = client
-        .get_max_lp_mintable_builder()
-        .subaccount(client.subaccount().unwrap())
-        .product_id(product_id)
-        .spot_leverage(true)
-        .query()
-        .await
-        .unwrap();
-
-    client
-        .mint_lp_builder()
-        .product_id(product_id)
-        .amount_base(to_u128_x18(2))
-        .quote_amount_high(max_lp_mintable.max_quote_amount as u128)
-        .quote_amount_low(1)
-        .execute()
-        .await
-        .unwrap();
-
-    let info = client
-        .get_subaccount_info(client.subaccount().unwrap())
-        .await
-        .unwrap();
-    let post_mint_balance = info.get_spot_balance(product_id).unwrap();
-
-    let lp_minted = post_mint_balance.lp_balance.amount - pre_balance.lp_balance.amount;
-    assert!(lp_minted > 0);
-
-    client
-        .burn_lp_builder()
-        .amount(lp_minted as u128)
-        .product_id(product_id)
-        .execute()
-        .await
-        .unwrap();
-
-    let info = client
-        .get_subaccount_info(client.subaccount().unwrap())
-        .await
-        .unwrap();
-    let post_burn_balance = info.get_spot_balance(product_id).unwrap();
-
-    assert!(post_burn_balance.lp_balance.amount < post_mint_balance.lp_balance.amount);
-}
-
-async fn trigger(client: &VertexClient) {
+async fn trigger(client: &NadoClient) {
     let product_id = 1;
     let trigger_order_builder = client
         .place_order_builder()
@@ -273,7 +216,7 @@ async fn trigger(client: &VertexClient) {
     assert!(!trigger_orders.contains_digest(digest));
 }
 
-async fn withdraw_collateral(client: &VertexClient) {
+async fn withdraw_collateral(client: &NadoClient) {
     let info = client
         .get_subaccount_info(client.subaccount().unwrap())
         .await

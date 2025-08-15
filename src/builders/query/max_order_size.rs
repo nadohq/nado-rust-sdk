@@ -1,5 +1,5 @@
-use crate::core::query::VertexQuery;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::core::query::NadoQuery;
+use crate::{build_and_call, fields_to_vars, nado_builder};
 use eyre::Result;
 
 use crate::engine;
@@ -7,14 +7,15 @@ use crate::engine::{Direction, MaxOrderSizeResponse};
 use crate::utils::client_error::none_error;
 use crate::utils::wrapped_option_utils::optional_bool_to_string;
 
-vertex_builder!(
+nado_builder!(
     MaxOrderSizeBuilder,
-    VertexQuery,
+    NadoQuery,
     subaccount: [u8; 32],
     product_id: u32,
     price_x18: i128,
     direction: Direction,
-    spot_leverage: bool;
+    spot_leverage: bool,
+    reduce_only: bool;
 
     build_and_call!(self, query, get_max_order_size => MaxOrderSizeResponse);
 
@@ -26,6 +27,7 @@ vertex_builder!(
             price_x18,
             direction,
             spot_leverage: optional_bool_to_string(self.spot_leverage),
+            reduce_only: optional_bool_to_string(self.reduce_only),
         })
     }
 );

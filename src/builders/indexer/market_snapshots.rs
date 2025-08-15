@@ -1,6 +1,6 @@
-use crate::core::indexer::VertexIndexer;
+use crate::core::indexer::NadoIndexer;
 use crate::utils::wrapped_option_utils::{wrapped_option_u64, wrapped_option_vec_u32};
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 use eyre::Result;
 
 use crate::indexer;
@@ -8,9 +8,9 @@ use crate::indexer::Interval;
 use crate::indexer::MarketSnapshotsResponse;
 use crate::utils::client_error::none_error;
 
-vertex_builder!(
+nado_builder!(
     MarketSnapshotsBuilder,
-    VertexIndexer,
+    NadoIndexer,
     max_time: u64,
     granularity: u64,
     product_ids: Vec<u32>,

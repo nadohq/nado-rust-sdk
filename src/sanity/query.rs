@@ -3,13 +3,13 @@ use eyre::Result;
 use crate::engine::Direction;
 use crate::math::to_i128_x18;
 
+use crate::nado_client::NadoClient;
 use crate::prelude::*;
 use crate::print_json;
 use crate::utils::private_key::private_key;
-use crate::vertex_client::VertexClient;
 
 pub async fn query_sanity_check() -> Result<()> {
-    let client = VertexClient::new(ClientMode::Local)
+    let client = NadoClient::new(ClientMode::Local)
         .with_signer(private_key())
         .await?;
 
@@ -75,14 +75,6 @@ pub async fn query_sanity_check() -> Result<()> {
         .query()
         .await?;
     print_json!(max_withdrawable);
-
-    let max_lp_mintable = client
-        .get_max_lp_mintable_builder()
-        .subaccount(client.subaccount().unwrap())
-        .product_id(1)
-        .query()
-        .await?;
-    print_json!(max_lp_mintable);
 
     Ok(())
 }

@@ -1,5 +1,5 @@
-use crate::core::indexer::VertexIndexer;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::core::indexer::NadoIndexer;
+use crate::{build_and_call, fields_to_vars, nado_builder};
 use eyre::Result;
 
 use crate::indexer;
@@ -7,9 +7,9 @@ use crate::indexer::MakerStatisticsResponse;
 use crate::serialize_utils::{WrappedU32, WrappedU64};
 use crate::utils::client_error::none_error;
 
-vertex_builder!(
+nado_builder!(
     MakerStatisticsBuilder,
-    VertexIndexer,
+    NadoIndexer,
     epoch: u32,
     product_id: u32,
     interval: u64;

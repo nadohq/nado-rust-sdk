@@ -1,6 +1,6 @@
-use crate::core::indexer::VertexIndexer;
+use crate::core::indexer::NadoIndexer;
 use crate::utils::client_error::none_error;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 use ethers::prelude::H160;
 
 use eyre::Result;
@@ -9,9 +9,9 @@ use crate::indexer;
 use crate::indexer::RewardsResponse;
 use crate::serialize_utils::WrappedU32;
 
-vertex_builder!(
+nado_builder!(
     RewardsBuilder,
-    VertexIndexer,
+    NadoIndexer,
     address: [u8; 20],
     start: u32,
     limit: u32;

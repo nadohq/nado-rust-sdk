@@ -1,4 +1,3 @@
-pub mod burn_lp;
 pub mod burn_vlp;
 pub mod cancellation;
 pub mod cancellation_products;
@@ -6,9 +5,7 @@ pub mod deposit_collateral;
 pub mod deposit_insurance;
 pub mod link_signer;
 pub mod liquidate_subaccount;
-pub mod mint_lp;
 pub mod mint_vlp;
-pub mod place_isolated_order;
 pub mod place_order;
 pub mod slow_mode;
 pub mod transfer_quote;

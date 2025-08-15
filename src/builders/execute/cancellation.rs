@@ -4,13 +4,13 @@ use crate::eip712_structs;
 use crate::engine::CancelOrdersResponse;
 use crate::utils::client_error::none_error;
 
-use crate::core::execute::VertexExecute;
+use crate::core::execute::NadoExecute;
 use crate::utils::nonce::order_nonce;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::{build_and_call, fields_to_vars, nado_builder};
 
-vertex_builder!(
+nado_builder!(
     CancellationBuilder,
-    VertexExecute,
+    NadoExecute,
     product_ids: Vec<u32>,
     linked_sender: [u8; 32],
     digests: Vec<[u8; 32]>,
@@ -21,7 +21,7 @@ vertex_builder!(
     build_and_call!(self, execute_trigger, cancel_trigger_orders => ());
 
     pub fn build(&self) -> Result<eip712_structs::Cancellation> {
-        let default_sender = self.vertex.subaccount()?;
+        let default_sender = self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);
         let nonce = self.nonce.unwrap_or(order_nonce(self.recv_time));
         fields_to_vars!(self, (product_ids: clone), (digests: clone));

@@ -1,11 +1,11 @@
-use vertex_sdk::eip712_structs::to_bytes32;
-use vertex_sdk::prelude::*;
-use vertex_sdk::utils::private_key::private_key;
+use nado_sdk::eip712_structs::to_bytes32;
+use nado_sdk::prelude::*;
+use nado_sdk::utils::private_key::private_key;
 
 #[tokio::main]
 async fn main() {
     // client with no signer
-    let mut client = VertexClient::new(ClientMode::SepoliaTest);
+    let mut client = NadoClient::new(ClientMode::Local);
 
     // client with signing enabled
     client = client.with_signer(private_key()).await.unwrap();

@@ -3,7 +3,7 @@ use reqwest::{Client, RequestBuilder};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::utils::response::VertexRestResponse;
+use crate::utils::response::NadoRestResponse;
 
 #[derive(Clone)]
 pub struct RestClient {
@@ -41,13 +41,13 @@ impl RestClient {
 
 async fn request<R: DeserializeOwned + Send>(request: RequestBuilder) -> Result<R> {
     let response = request.send().await?;
-    let response_data: VertexRestResponse<R> = response.json().await?;
+    let response_data: NadoRestResponse<R> = response.json().await?;
     response_data.extract_response()
 }
 
 async fn debug_request(request: RequestBuilder) -> Result<()> {
     let response = request.send().await?;
     let response_data = response.text().await?;
-    println!("response_data: {}", response_data);
+    println!("response_data: {response_data}");
     Ok(())
 }

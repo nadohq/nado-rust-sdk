@@ -1,10 +1,10 @@
+use nado_sdk::engine::SymbolsResponseData;
+use nado_sdk::prelude::*;
 use std::collections::HashMap;
-use vertex_sdk::engine::SymbolsResponseData;
-use vertex_sdk::prelude::*;
 
 #[tokio::main]
 async fn main() {
-    let client = VertexClient::new(ClientMode::SepoliaTest);
+    let client = NadoClient::new(ClientMode::Local);
 
     // optionally specify product type or specific symbol
     let spot_symbols = client

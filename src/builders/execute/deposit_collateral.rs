@@ -1,5 +1,5 @@
-use crate::core::execute::VertexExecute;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::core::execute::NadoExecute;
+use crate::{build_and_call, fields_to_vars, nado_builder};
 use ethers::types::TransactionReceipt;
 use eyre::Result;
 use std::time::Duration;
@@ -7,9 +7,9 @@ use std::time::Duration;
 use crate::utils::client_error::none_error;
 use crate::utils::constants::DEFAULT_RISK_CHECK_SLEEP_SECS;
 
-vertex_builder!(
+nado_builder!(
     DepositCollateralBuilder,
-    VertexExecute,
+    NadoExecute,
     product_id: u32,
     amount: u128,
     referral_code: String,
@@ -27,7 +27,7 @@ vertex_builder!(
         let product_id = params.product_id;
         let expected_balance = self.calculate_expected_balance(&params).await?;
 
-        let receipt = self.vertex.deposit_collateral(params).await?;
+        let receipt = self.nado.deposit_collateral(params).await?;
 
         self.await_expected_balance(expected_balance, product_id).await?;
         self.sleep_for_risk_check().await;
@@ -36,7 +36,7 @@ vertex_builder!(
 
     async fn sleep_for_risk_check(&self) {
         let sleep_secs = self.risk_check_sleep_secs.unwrap_or(DEFAULT_RISK_CHECK_SLEEP_SECS);
-        if self.vertex.is_rest_client() {
+        if self.nado.is_rest_client() {
             tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
         }
     }
@@ -59,7 +59,7 @@ vertex_builder!(
     }
 
     async fn spot_balance(&self, product_id: u32) -> Result<i128> {
-        let subaccount_info = self.vertex.get_subaccount_info(self.get_subaccount()?).await?;
+        let subaccount_info = self.nado.get_subaccount_info(self.get_subaccount()?).await?;
         let spot_balance = subaccount_info.get_spot_balance(product_id)?;
         Ok(spot_balance.balance.amount)
     }
@@ -90,7 +90,7 @@ vertex_builder!(
         let subaccount = if let Some(on_behalf_of) = self.on_behalf_of {
             on_behalf_of
         } else {
-            self.vertex.subaccount()?
+            self.nado.subaccount()?
         };
         Ok(subaccount)
     }

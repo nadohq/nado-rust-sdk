@@ -1,12 +1,12 @@
-use vertex_sdk::eip712_structs::OrderType;
-use vertex_sdk::math::to_i128_x18;
-use vertex_sdk::prelude::*;
-use vertex_sdk::utils::private_key::private_key;
-use vertex_sdk::utils::time::timestamp;
+use nado_sdk::eip712_structs::OrderType;
+use nado_sdk::math::to_i128_x18;
+use nado_sdk::prelude::*;
+use nado_sdk::utils::private_key::private_key;
+use nado_sdk::utils::time::timestamp;
 
 #[tokio::main]
 async fn main() {
-    let client = VertexClient::new(ClientMode::SepoliaTest)
+    let client = NadoClient::new(ClientMode::Local)
         .with_signer(private_key())
         .await
         .unwrap();

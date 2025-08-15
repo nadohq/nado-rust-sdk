@@ -1,11 +1,11 @@
 use eyre::{eyre, Result};
 
-use crate::prelude::VertexBase;
+use crate::prelude::NadoBase;
 use crate::utils::client_error::ClientError;
 
 pub fn subaccount_matches_wallet<V>(client: &V, subaccount: [u8; 32]) -> Result<()>
 where
-    V: VertexBase,
+    V: NadoBase,
 {
     let wallet_address = &client.address()?[..20];
     if wallet_address == &subaccount[..20] {

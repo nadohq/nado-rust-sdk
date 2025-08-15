@@ -1,6 +1,6 @@
-use vertex_sdk::sanity::execute::execute_sanity_check;
-use vertex_sdk::sanity::indexer::indexer_sanity_check;
-use vertex_sdk::sanity::query::query_sanity_check;
+use nado_sdk::sanity::execute::execute_sanity_check;
+use nado_sdk::sanity::indexer::indexer_sanity_check;
+use nado_sdk::sanity::query::query_sanity_check;
 
 #[tokio::main]
 async fn main() {

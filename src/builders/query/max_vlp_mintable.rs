@@ -1,5 +1,5 @@
-use crate::core::query::VertexQuery;
-use crate::{build_and_call, fields_to_vars, vertex_builder};
+use crate::core::query::NadoQuery;
+use crate::{build_and_call, fields_to_vars, nado_builder};
 use eyre::Result;
 
 use crate::engine;
@@ -7,9 +7,9 @@ use crate::engine::MaxVlpMintableResponse;
 use crate::utils::client_error::none_error;
 use crate::utils::wrapped_option_utils::optional_bool_to_string;
 
-vertex_builder!(
+nado_builder!(
     MaxVlpMintableBuilder,
-    VertexQuery,
+    NadoQuery,
     subaccount: [u8; 32],
     spot_leverage: bool;
 

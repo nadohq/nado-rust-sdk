@@ -7,19 +7,18 @@ use crate::engine::{
     AllProductsResponse, AssetsResponse, ContractsResponse, EngineStatus, FeeRatesResponse,
     HealthGroupsResponse, InsuranceResponse, IsolatedPositionsResponse, LinkedSignerResponse,
     MarketLiquidityResponse, MarketPairsParams, MarketPairsResponse, MarketPriceResponse,
-    MarketPricesResponse, MaxLpMintableResponse, MaxOrderSizeResponse, MaxVlpMintableResponse,
-    MaxWithdrawableResponse, NoncesResponse, OrderResponse, OrderbookParams, OrderbookResponse,
-    Query, QueryResponseData, QueryV2, SubaccountInfoResponse, SubaccountOrdersResponse,
-    SymbolsResponse, Txn,
+    MarketPricesResponse, MaxOrderSizeResponse, MaxVlpMintableResponse, MaxWithdrawableResponse,
+    NoncesResponse, OrderResponse, OrderbookParams, OrderbookResponse, Query, QueryResponseData,
+    QueryV2, SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse, Txn,
 };
 use crate::trigger;
 use crate::trigger::ListTriggerOrdersResponse;
 
-use crate::core::base::VertexBase;
+use crate::core::base::NadoBase;
 use crate::map_response;
 
 #[async_trait]
-pub trait VertexQuery: VertexBase + Sync {
+pub trait NadoQuery: NadoBase + Sync {
     async fn query(&self, query: Query) -> Result<QueryResponseData>;
 
     async fn query_trigger(&self, query: trigger::Query) -> Result<trigger::QueryResponseData>;
@@ -144,14 +143,6 @@ pub trait VertexQuery: VertexBase + Sync {
     ) -> Result<MaxWithdrawableResponse> {
         let query_response = self.query(max_withdrawable_query).await?;
         map_response!(query_response, QueryResponseData::MaxWithdrawable)
-    }
-
-    async fn get_max_lp_mintable(
-        &self,
-        max_lp_mintable_query: Query,
-    ) -> Result<MaxLpMintableResponse> {
-        let query_response = self.query(max_lp_mintable_query).await?;
-        map_response!(query_response, QueryResponseData::MaxLpMintable)
     }
 
     async fn get_max_vlp_mintable(
