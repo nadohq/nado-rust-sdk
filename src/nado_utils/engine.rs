@@ -5,7 +5,7 @@ use crate::bindings::querier::{
     BookInfo, HealthInfo, PerpBalance, PerpProduct, ProductInfo, Risk, SpotBalance, SubaccountInfo,
 };
 use crate::eip712_structs::{
-    BurnVlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintVlp, Order,
+    BurnNlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintNlp, Order,
     TransferQuote, WithdrawCollateral,
 };
 use crate::math::f64_to_x18;
@@ -190,7 +190,7 @@ pub enum Query {
         spot_leverage: Option<String>,
     },
 
-    MaxVlpMintable {
+    MaxNlpMintable {
         #[serde(
             serialize_with = "serialize_bytes32",
             deserialize_with = "deserialize_bytes32"
@@ -326,8 +326,8 @@ pub enum Execute {
         signature: Vec<u8>,
     },
 
-    MintVlp {
-        tx: MintVlp,
+    MintNlp {
+        tx: MintNlp,
         #[serde(
             serialize_with = "serialize_vec_u8",
             deserialize_with = "deserialize_vec_u8"
@@ -335,8 +335,8 @@ pub enum Execute {
         signature: Vec<u8>,
         spot_leverage: Option<bool>,
     },
-    BurnVlp {
-        tx: BurnVlp,
+    BurnNlp {
+        tx: BurnNlp,
         #[serde(
             serialize_with = "serialize_vec_u8",
             deserialize_with = "deserialize_vec_u8"
@@ -945,7 +945,7 @@ pub struct MaxWithdrawableResponse {
 #[archive(check_bytes)]
 // #[ts(export)]
 // #[ts(export_to = "tsBindings/msgResponses/")]
-pub struct MaxVlpMintableResponse {
+pub struct MaxNlpMintableResponse {
     // #[ts(type = "string")]
     #[serde(
         serialize_with = "serialize_i128",
@@ -1346,7 +1346,7 @@ pub enum QueryResponseData {
     EdgeAllProducts(EdgeAllProductsResponse),
     MaxOrderSize(MaxOrderSizeResponse),
     MaxWithdrawable(MaxWithdrawableResponse),
-    MaxVlpMintable(MaxVlpMintableResponse),
+    MaxNlpMintable(MaxNlpMintableResponse),
     HealthGroups(HealthGroupsResponse),
     Insurance(InsuranceResponse),
     Symbols(SymbolsResponse),

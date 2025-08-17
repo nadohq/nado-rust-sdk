@@ -332,7 +332,7 @@ pub enum Query {
         interval: Interval,
     },
 
-    VlpSnapshots {
+    NlpSnapshots {
         interval: Option<Interval>,
         idx: Option<WrappedU64>,
         max_time: Option<WrappedU64>,
@@ -364,7 +364,7 @@ pub struct TxHashesResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct VlpSnapshot {
+pub struct NlpSnapshot {
     #[serde(serialize_with = "serialize_i64", deserialize_with = "deserialize_i64")]
     pub submission_idx: i64,
     #[serde(serialize_with = "serialize_i64", deserialize_with = "deserialize_i64")]
@@ -405,8 +405,8 @@ pub struct VlpSnapshot {
     pub tvl: i128,
 }
 #[derive(Serialize, Deserialize, Debug)]
-pub struct VlpSnapshotsResponse {
-    pub snapshots: Vec<VlpSnapshot>,
+pub struct NlpSnapshotsResponse {
+    pub snapshots: Vec<NlpSnapshot>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

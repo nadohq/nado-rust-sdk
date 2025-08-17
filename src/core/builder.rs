@@ -1,11 +1,11 @@
-use crate::builders::execute::burn_vlp::BurnVlpBuilder;
+use crate::builders::execute::burn_nlp::BurnNlpBuilder;
 use crate::builders::execute::cancellation::CancellationBuilder;
 use crate::builders::execute::cancellation_products::CancellationProductsBuilder;
 use crate::builders::execute::deposit_collateral::DepositCollateralBuilder;
 use crate::builders::execute::deposit_insurance::DepositInsuranceBuilder;
 use crate::builders::execute::link_signer::LinkSignerBuilder;
 use crate::builders::execute::liquidate_subaccount::LiquidateSubaccountBuilder;
-use crate::builders::execute::mint_vlp::MintVlpBuilder;
+use crate::builders::execute::mint_nlp::MintNlpBuilder;
 use crate::builders::execute::place_order::PlaceOrderBuilder;
 use crate::builders::execute::slow_mode::SubmitSlowModeTxBuilder;
 use crate::builders::execute::transfer_quote::TransferQuoteBuilder;
@@ -25,8 +25,8 @@ use crate::builders::indexer::product_snapshots::ProductSnapshotsBuilder;
 use crate::builders::indexer::rewards::RewardsBuilder;
 use crate::builders::indexer::subaccounts::SubaccountsBuilder;
 use crate::builders::indexer::trades::TradesParamsBuilder;
+use crate::builders::query::max_nlp_mintable::MaxNlpMintableBuilder;
 use crate::builders::query::max_order_size::MaxOrderSizeBuilder;
-use crate::builders::query::max_vlp_mintable::MaxVlpMintableBuilder;
 use crate::builders::query::max_withdrawable::MaxWithdrawableBuilder;
 use crate::builders::trigger::list_trigger_orders::ListTriggerOrdersBuilder;
 use crate::builders::utils::fee_calculator::FeeCalculator;
@@ -57,8 +57,8 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
     get_nado_builder!(cancellation_products_builder, CancellationProductsBuilder);
     get_nado_builder!(liquidate_subaccount_builder, LiquidateSubaccountBuilder);
     get_nado_builder!(withdraw_collateral_builder, WithdrawCollateralBuilder);
-    get_nado_builder!(mint_vlp_builder, MintVlpBuilder);
-    get_nado_builder!(burn_vlp_builder, BurnVlpBuilder);
+    get_nado_builder!(mint_nlp_builder, MintNlpBuilder);
+    get_nado_builder!(burn_nlp_builder, BurnNlpBuilder);
     get_nado_builder!(link_signer_builder, LinkSignerBuilder);
     get_nado_builder!(transfer_quote_builder, TransferQuoteBuilder);
     get_nado_builder!(submit_slow_mode_tx_builder, SubmitSlowModeTxBuilder);
@@ -66,7 +66,7 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
 
     get_nado_builder!(get_max_order_size_builder, MaxOrderSizeBuilder);
     get_nado_builder!(get_max_withdrawable_builder, MaxWithdrawableBuilder);
-    get_nado_builder!(get_max_vlp_mintable_builder, MaxVlpMintableBuilder);
+    get_nado_builder!(get_max_nlp_mintable_builder, MaxNlpMintableBuilder);
 
     get_nado_builder!(get_candlesticks_builder, CandlesticksBuilder);
     get_nado_builder!(get_historical_orders_builder, HistoricalOrdersBuilder);

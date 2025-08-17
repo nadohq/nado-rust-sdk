@@ -7,7 +7,7 @@ use crate::engine::{
     AllProductsResponse, AssetsResponse, ContractsResponse, EngineStatus, FeeRatesResponse,
     HealthGroupsResponse, InsuranceResponse, IsolatedPositionsResponse, LinkedSignerResponse,
     MarketLiquidityResponse, MarketPairsParams, MarketPairsResponse, MarketPriceResponse,
-    MarketPricesResponse, MaxOrderSizeResponse, MaxVlpMintableResponse, MaxWithdrawableResponse,
+    MarketPricesResponse, MaxNlpMintableResponse, MaxOrderSizeResponse, MaxWithdrawableResponse,
     NoncesResponse, OrderResponse, OrderbookParams, OrderbookResponse, Query, QueryResponseData,
     QueryV2, SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse, Txn,
 };
@@ -145,12 +145,12 @@ pub trait NadoQuery: NadoBase + Sync {
         map_response!(query_response, QueryResponseData::MaxWithdrawable)
     }
 
-    async fn get_max_vlp_mintable(
+    async fn get_max_nlp_mintable(
         &self,
-        max_vlp_mintable_query: Query,
-    ) -> Result<MaxVlpMintableResponse> {
-        let query_response = self.query(max_vlp_mintable_query).await?;
-        map_response!(query_response, QueryResponseData::MaxVlpMintable)
+        max_nlp_mintable_query: Query,
+    ) -> Result<MaxNlpMintableResponse> {
+        let query_response = self.query(max_nlp_mintable_query).await?;
+        map_response!(query_response, QueryResponseData::MaxNlpMintable)
     }
 
     async fn get_health_groups(&self) -> Result<HealthGroupsResponse> {

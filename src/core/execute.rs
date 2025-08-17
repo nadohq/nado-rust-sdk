@@ -10,7 +10,7 @@ use crate::builders::execute::deposit_collateral::DepositCollateralParams;
 use crate::builders::execute::slow_mode::SubmitSlowModeTxParams;
 use crate::core::query::NadoQuery;
 use crate::eip712_structs::{
-    BurnVlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintVlp,
+    BurnNlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintNlp,
     TransferQuote, WithdrawCollateral,
 };
 use crate::engine::{
@@ -136,9 +136,9 @@ pub trait NadoExecute: NadoQuery {
         Ok(())
     }
 
-    async fn mint_vlp(&self, tx: MintVlp, spot_leverage: Option<bool>) -> Result<()> {
+    async fn mint_nlp(&self, tx: MintNlp, spot_leverage: Option<bool>) -> Result<()> {
         let signature = self.endpoint_signature(&tx)?;
-        let execute = Execute::MintVlp {
+        let execute = Execute::MintNlp {
             tx,
             signature,
             spot_leverage,
@@ -147,9 +147,9 @@ pub trait NadoExecute: NadoQuery {
         Ok(())
     }
 
-    async fn burn_vlp(&self, tx: BurnVlp) -> Result<()> {
+    async fn burn_nlp(&self, tx: BurnNlp) -> Result<()> {
         let signature = self.endpoint_signature(&tx)?;
-        let execute = Execute::BurnVlp { tx, signature };
+        let execute = Execute::BurnNlp { tx, signature };
         self.execute(execute).await?;
         Ok(())
     }

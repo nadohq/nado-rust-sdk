@@ -3,11 +3,11 @@ use crate::{fields_to_vars, nado_builder};
 use ethers::types::H160;
 use eyre::Result;
 
-use crate::eip712_structs::MintVlp;
+use crate::eip712_structs::MintNlp;
 use crate::utils::client_error::none_error;
 
 nado_builder!(
-    MintVlpBuilder,
+    MintNlpBuilder,
     NadoExecute,
     quote_amount: u128,
     nonce: u64,
@@ -17,11 +17,11 @@ nado_builder!(
     // we do not use the build_and_call macro here because of extra required argument
     pub async fn execute(&self) -> Result<()> {
         self.nado
-            .mint_vlp(self.build().await?, self.spot_leverage)
+            .mint_nlp(self.build().await?, self.spot_leverage)
             .await
     }
 
-    pub async fn build(&self) -> Result<MintVlp> {
+    pub async fn build(&self) -> Result<MintNlp> {
         let default_sender = self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);
         let address = H160::from_slice(&sender[0..20]).0;
@@ -33,7 +33,7 @@ nado_builder!(
             quote_amount,
         );
 
-        Ok(MintVlp {
+        Ok(MintNlp {
             sender,
             quoteAmount: quote_amount,
             nonce,
