@@ -194,6 +194,10 @@ impl Order {
     pub fn reserved_bits(&self) -> u128 {
         (self.appendix >> 14) & ((1 << 18) - 1)
     }
+
+    pub fn version(&self) -> u8 {
+        (self.appendix & 255) as u8
+    }
 }
 
 #[derive(
@@ -453,7 +457,7 @@ impl WithdrawCollateral {
 #[eip712()]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
-pub struct MintVlp {
+pub struct MintNlp {
     // #[ts(type = "typestring")]
     #[serde(
         serialize_with = "serialize_bytes32",
@@ -470,9 +474,9 @@ pub struct MintVlp {
     pub nonce: u64,
 }
 
-impl MintVlp {
-    pub fn to_binding(&self) -> endpoint::MintVlp {
-        endpoint::MintVlp {
+impl MintNlp {
+    pub fn to_binding(&self) -> endpoint::MintNlp {
+        endpoint::MintNlp {
             sender: self.sender,
             quote_amount: self.quoteAmount,
             nonce: self.nonce,
@@ -494,7 +498,7 @@ impl MintVlp {
 #[eip712()]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
-pub struct BurnVlp {
+pub struct BurnNlp {
     // #[ts(type = "typestring")]
     #[serde(
         serialize_with = "serialize_bytes32",
@@ -506,16 +510,16 @@ pub struct BurnVlp {
         deserialize_with = "deserialize_u128"
     )]
     // #[ts(type = "BigNumberish")]
-    pub vlpAmount: u128,
+    pub nlpAmount: u128,
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub nonce: u64,
 }
 
-impl BurnVlp {
-    pub fn to_binding(&self) -> endpoint::BurnVlp {
-        endpoint::BurnVlp {
+impl BurnNlp {
+    pub fn to_binding(&self) -> endpoint::BurnNlp {
+        endpoint::BurnNlp {
             sender: self.sender,
-            vlp_amount: self.vlpAmount,
+            nlp_amount: self.nlpAmount,
             nonce: self.nonce,
         }
     }

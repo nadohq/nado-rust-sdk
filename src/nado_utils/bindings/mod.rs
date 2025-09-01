@@ -1,5 +1,6 @@
 pub mod clearinghouse;
 pub mod clearinghouse_liq;
+pub mod contract_owner;
 pub mod endpoint;
 pub mod gas_info;
 pub mod mock_erc20;
@@ -8,7 +9,6 @@ pub mod perp_engine;
 pub mod querier;
 pub mod spot_engine;
 pub mod token;
-
 pub mod verifier;
 pub mod withdraw_pool;
 
@@ -69,6 +69,7 @@ pub fn create_bindings(source_dir: String, output_dir: String) {
     generator.generate("Endpoint", "FEndpoint.json", "endpoint.rs");
     generator.generate("Verifier", "Verifier.json", "verifier.rs");
     generator.generate("Querier", "FQuerier.json", "querier.rs");
+    generator.generate("ContractOwner", "ContractOwner.json", "contract_owner.rs");
     generator.generate("WithdrawPool", "WithdrawPool.json", "withdraw_pool.rs");
 
     // EngineToken because there is a collision with Token

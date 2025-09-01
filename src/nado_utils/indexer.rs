@@ -241,24 +241,6 @@ pub enum Query {
         limit: Option<WrappedU32>,
     },
 
-    InitialDropConditions {
-        address: H160,
-    },
-
-    BlitzPoints {
-        address: H160,
-    },
-
-    BlastPoints {
-        address: H160,
-    },
-
-    BlitzPointsLeaderboard {
-        epoch: u32,
-        start: Option<u32>,
-        limit: Option<u32>,
-    },
-
     Leaderboard {
         contest_id: WrappedU32,
         rank_type: LeaderboardType,
@@ -305,15 +287,6 @@ pub enum Query {
         api_key: String,
     },
 
-    SonicPoints {
-        address: H160,
-    },
-
-    SonicPointsLeaderboard {
-        start: Option<u32>,
-        limit: Option<u32>,
-    },
-
     StakingV2ModifyStake {},
 
     StakingV2PoolSnapshots {
@@ -332,7 +305,7 @@ pub enum Query {
         interval: Interval,
     },
 
-    VlpSnapshots {
+    NlpSnapshots {
         interval: Option<Interval>,
         idx: Option<WrappedU64>,
         max_time: Option<WrappedU64>,
@@ -344,6 +317,18 @@ pub enum Query {
     },
 
     Backlog {},
+
+    DirectDepositAddress {
+        #[serde(
+            serialize_with = "serialize_bytes32",
+            deserialize_with = "deserialize_bytes32"
+        )]
+        subaccount: [u8; 32],
+    },
+
+    InkAirdrop {
+        address: H160,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -364,7 +349,7 @@ pub struct TxHashesResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct VlpSnapshot {
+pub struct NlpSnapshot {
     #[serde(serialize_with = "serialize_i64", deserialize_with = "deserialize_i64")]
     pub submission_idx: i64,
     #[serde(serialize_with = "serialize_i64", deserialize_with = "deserialize_i64")]
@@ -405,8 +390,8 @@ pub struct VlpSnapshot {
     pub tvl: i128,
 }
 #[derive(Serialize, Deserialize, Debug)]
-pub struct VlpSnapshotsResponse {
-    pub snapshots: Vec<VlpSnapshot>,
+pub struct NlpSnapshotsResponse {
+    pub snapshots: Vec<NlpSnapshot>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -952,86 +937,6 @@ pub struct InitialDropConditionsResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Phase2BlitzPoints {
-    pub epoch: u32,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub start_time: u64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub period: u64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub trading_points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub referral_points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub taker_volumes: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub maker_volumes: f64,
-    pub rank: u32,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct BlitzPointsResponse {
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub initial_points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub trading_points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub referral_points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub taker_volumes: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub maker_volumes: f64,
-    pub users_referred: u64,
-    pub phase2_points: Vec<Phase2BlitzPoints>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SonicPointsResponse {
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub trading_points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub referral_points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub taker_volumes: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub maker_volumes: f64,
-    pub users_referred: u64,
-    pub rank: u32,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct BlastPointsResponse {
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub gold: f64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PointsLeaderboardPosition {
-    #[serde(
-        serialize_with = "serialize_bytes20",
-        deserialize_with = "deserialize_bytes20"
-    )]
-    pub address: [u8; 20],
-    pub rank: u32,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub trading_points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub referral_points: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub taker_volumes: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub maker_volumes: f64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PointsLeaderboardResponse {
-    pub positions: Vec<PointsLeaderboardPosition>,
-    pub total: u32,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum EventsOrTsToEvents {
     Events(Vec<Event>),
@@ -1406,7 +1311,6 @@ pub enum QueryV2 {
     Tickers(TickersParams),
     Contracts(ContractsParams),
     Trades(TradesParams),
-    Vrtx(VrtxParams),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -1425,18 +1329,6 @@ pub struct TradesParams {
     pub ticker_id: String,
     pub max_trade_id: Option<WrappedU64>,
     pub limit: Option<WrappedU32>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct VrtxParams {
-    pub q: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub enum VrtxResponse {
-    TotalSupply(f64),
-    CirculatingSupply(f64),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -1643,3 +1535,13 @@ pub struct BacklogData {
 }
 
 pub type BacklogResponse = BacklogData;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DirectDepositAddressResponse {
+    pub v1_address: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct InkAirdropResponse {
+    pub amount: String,
+}
