@@ -2,7 +2,6 @@ use crate::bindings::endpoint::Endpoint;
 use crate::bindings::mock_erc20::MockERC20;
 use crate::builders::execute::deposit_collateral::DepositCollateralParams;
 use crate::core::execute::NadoExecute;
-use crate::eip712_structs::{from_bytes32, to_bytes12};
 use crate::provider::NadoProvider;
 use crate::revert::parse_provider_error;
 use crate::utils::constants::DEFAULT_PENDING_TX_RETIRES;
@@ -77,8 +76,8 @@ pub async fn endpoint_deposit_call<V: NadoExecute>(
     let mut tx = if let Some(referral_code) = deposit_collateral_params.referral_code.clone() {
         endpoint.deposit_collateral_with_referral(subaccount, product_id, amount, referral_code)
     } else {
-        let (_, subaccount_name) = from_bytes32(subaccount);
-        let subaccount_name = to_bytes12(subaccount_name.as_str());
+        let mut subaccount_name = [0u8; 12];
+        subaccount_name[..12].copy_from_slice(&subaccount[20..]);
         endpoint.deposit_collateral(subaccount_name, product_id, amount)
     };
 

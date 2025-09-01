@@ -4,12 +4,17 @@ use ethers::prelude::*;
 use ethers::types::transaction::eip712::Eip712;
 use ethers_core::types::transaction::eip712::EIP712Domain;
 use ethers_core::utils::keccak256;
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 use crate::bindings::endpoint;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq,
+)]
+#[archive(check_bytes)]
 #[serde(rename_all = "snake_case")]
+#[repr(u8)]
 pub enum TxType {
     LiquidateSubaccount = 0,
     DepositCollateral = 1,
@@ -32,11 +37,13 @@ pub enum TxType {
     WithdrawInsurance = 18,
     CreateIsolatedSubaccount = 19,
     DelistProduct = 20,
-    MintVlp = 21,
-    BurnVlp = 22,
-    RebalanceVlp = 23,
-    MatchOrdersWithAmount = 24,
-    UpdateTierFeeRates = 25,
+    MintNlp = 21,
+    BurnNlp = 22,
+    MatchOrdersWithAmount = 23,
+    UpdateTierFeeRates = 24,
+    AddNlpPool = 25,
+    UpdateNlpPool = 26,
+    DeleteNlpPool = 27,
 }
 
 impl TxType {
@@ -63,11 +70,13 @@ impl TxType {
             18 => Self::WithdrawInsurance,
             19 => Self::CreateIsolatedSubaccount,
             20 => Self::DelistProduct,
-            21 => Self::MintVlp,
-            22 => Self::BurnVlp,
-            23 => Self::RebalanceVlp,
-            24 => Self::MatchOrdersWithAmount,
-            25 => Self::UpdateTierFeeRates,
+            21 => Self::MintNlp,
+            22 => Self::BurnNlp,
+            23 => Self::MatchOrdersWithAmount,
+            24 => Self::UpdateTierFeeRates,
+            25 => Self::AddNlpPool,
+            26 => Self::UpdateNlpPool,
+            27 => Self::DeleteNlpPool,
             _ => panic!("Invalid TxType"),
         }
     }
@@ -121,10 +130,12 @@ pub enum NadoTx {
     WithdrawInsurance(endpoint::WithdrawInsurance),
     CreateIsolatedSubaccount(endpoint::CreateIsolatedSubaccount),
     DelistProduct(endpoint::DelistProduct),
-    MintVlp(endpoint::MintVlp),
-    BurnVlp(endpoint::BurnVlp),
-    RebalanceVlp(endpoint::RebalanceVlp),
+    MintNlp(endpoint::MintNlp),
+    BurnNlp(endpoint::BurnNlp),
     UpdateTierFeeRates(endpoint::UpdateTierFeeRates),
+    AddNlpPool(endpoint::AddNlpPool),
+    UpdateNlpPool(endpoint::UpdateNlpPool),
+    DeleteNlpPool(endpoint::DeleteNlpPool),
     Other,
 }
 
@@ -149,10 +160,12 @@ impl NadoTx {
             NadoTx::DelistProduct(_) => TxType::DelistProduct,
             NadoTx::DumpFees => TxType::DumpFees,
             NadoTx::CreateIsolatedSubaccount(_) => TxType::CreateIsolatedSubaccount,
-            NadoTx::MintVlp(_) => TxType::MintVlp,
-            NadoTx::BurnVlp(_) => TxType::BurnVlp,
-            NadoTx::RebalanceVlp(_) => TxType::RebalanceVlp,
+            NadoTx::MintNlp(_) => TxType::MintNlp,
+            NadoTx::BurnNlp(_) => TxType::BurnNlp,
             NadoTx::UpdateTierFeeRates(_) => TxType::UpdateTierFeeRates,
+            NadoTx::AddNlpPool(_) => TxType::AddNlpPool,
+            NadoTx::UpdateNlpPool(_) => TxType::UpdateNlpPool,
+            NadoTx::DeleteNlpPool(_) => TxType::DeleteNlpPool,
             NadoTx::Other => panic!("Other is not a valid tx type"),
         }
     }

@@ -5,7 +5,7 @@ use crate::bindings::querier::{
     BookInfo, HealthInfo, PerpBalance, PerpProduct, ProductInfo, Risk, SpotBalance, SubaccountInfo,
 };
 use crate::eip712_structs::{
-    BurnVlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintVlp, Order,
+    BurnNlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintNlp, Order,
     TransferQuote, WithdrawCollateral,
 };
 use crate::math::f64_to_x18;
@@ -190,7 +190,7 @@ pub enum Query {
         spot_leverage: Option<String>,
     },
 
-    MaxVlpMintable {
+    MaxNlpMintable {
         #[serde(
             serialize_with = "serialize_bytes32",
             deserialize_with = "deserialize_bytes32"
@@ -217,6 +217,8 @@ pub enum Query {
         product_ids: Option<Vec<u32>>,
         product_type: Option<String>,
     },
+
+    NlpPoolInfo {},
 }
 
 #[derive(Archive, RkyvDeserialize, RkyvSerialize, Clone, Serialize, Deserialize, Debug)]
@@ -326,8 +328,8 @@ pub enum Execute {
         signature: Vec<u8>,
     },
 
-    MintVlp {
-        tx: MintVlp,
+    MintNlp {
+        tx: MintNlp,
         #[serde(
             serialize_with = "serialize_vec_u8",
             deserialize_with = "deserialize_vec_u8"
@@ -335,8 +337,8 @@ pub enum Execute {
         signature: Vec<u8>,
         spot_leverage: Option<bool>,
     },
-    BurnVlp {
-        tx: BurnVlp,
+    BurnNlp {
+        tx: BurnNlp,
         #[serde(
             serialize_with = "serialize_vec_u8",
             deserialize_with = "deserialize_vec_u8"
@@ -945,7 +947,7 @@ pub struct MaxWithdrawableResponse {
 #[archive(check_bytes)]
 // #[ts(export)]
 // #[ts(export_to = "tsBindings/msgResponses/")]
-pub struct MaxVlpMintableResponse {
+pub struct MaxNlpMintableResponse {
     // #[ts(type = "string")]
     #[serde(
         serialize_with = "serialize_i128",
@@ -1013,6 +1015,44 @@ pub struct InsuranceResponse {
 #[archive(check_bytes)]
 pub struct SymbolsResponse {
     pub symbols: HashMap<String, SymbolsResponseData>,
+}
+
+// @need review, is manualy coded, should here be automatically generated?
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+pub struct NlpPool {
+    pub pool_id: u64,
+    pub subaccount: [u8; 32],
+    pub owner: [u8; 20],
+    pub balance_weight_x18: u128,
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+pub struct NlpPoolInfoResponse {
+    pub nlp_pools: Vec<NlpPool>,
 }
 
 #[derive(
@@ -1346,11 +1386,12 @@ pub enum QueryResponseData {
     EdgeAllProducts(EdgeAllProductsResponse),
     MaxOrderSize(MaxOrderSizeResponse),
     MaxWithdrawable(MaxWithdrawableResponse),
-    MaxVlpMintable(MaxVlpMintableResponse),
+    MaxNlpMintable(MaxNlpMintableResponse),
     HealthGroups(HealthGroupsResponse),
     Insurance(InsuranceResponse),
     Symbols(SymbolsResponse),
     IsolatedPositions(IsolatedPositionsResponse),
+    NlpPoolInfo(NlpPoolInfoResponse),
     Error(String),
 }
 

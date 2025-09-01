@@ -7,9 +7,10 @@ use crate::engine::{
     AllProductsResponse, AssetsResponse, ContractsResponse, EngineStatus, FeeRatesResponse,
     HealthGroupsResponse, InsuranceResponse, IsolatedPositionsResponse, LinkedSignerResponse,
     MarketLiquidityResponse, MarketPairsParams, MarketPairsResponse, MarketPriceResponse,
-    MarketPricesResponse, MaxOrderSizeResponse, MaxVlpMintableResponse, MaxWithdrawableResponse,
-    NoncesResponse, OrderResponse, OrderbookParams, OrderbookResponse, Query, QueryResponseData,
-    QueryV2, SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse, Txn,
+    MarketPricesResponse, MaxNlpMintableResponse, MaxOrderSizeResponse, MaxWithdrawableResponse,
+    NlpPoolInfoResponse, NoncesResponse, OrderResponse, OrderbookParams, OrderbookResponse, Query,
+    QueryResponseData, QueryV2, SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse,
+    Txn,
 };
 use crate::trigger;
 use crate::trigger::ListTriggerOrdersResponse;
@@ -145,12 +146,17 @@ pub trait NadoQuery: NadoBase + Sync {
         map_response!(query_response, QueryResponseData::MaxWithdrawable)
     }
 
-    async fn get_max_vlp_mintable(
+    async fn get_max_nlp_mintable(
         &self,
-        max_vlp_mintable_query: Query,
-    ) -> Result<MaxVlpMintableResponse> {
-        let query_response = self.query(max_vlp_mintable_query).await?;
-        map_response!(query_response, QueryResponseData::MaxVlpMintable)
+        max_nlp_mintable_query: Query,
+    ) -> Result<MaxNlpMintableResponse> {
+        let query_response = self.query(max_nlp_mintable_query).await?;
+        map_response!(query_response, QueryResponseData::MaxNlpMintable)
+    }
+
+    async fn get_nlp_pool_info(&self, nlp_pool_info_query: Query) -> Result<NlpPoolInfoResponse> {
+        let query_response = self.query(nlp_pool_info_query).await?;
+        map_response!(query_response, QueryResponseData::NlpPoolInfo)
     }
 
     async fn get_health_groups(&self) -> Result<HealthGroupsResponse> {

@@ -6,6 +6,7 @@ use std::path::Path;
 pub static CONFIGS: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/nado_utils/configs");
 #[derive(Clone, PartialEq)]
 pub enum ClientMode {
+    Test,
     Local,
     LocalAlt,
 }
@@ -18,7 +19,7 @@ impl ClientMode {
                 format!("http://gateway.{envtag}.nado.xyz:80/v1")
             }
             _ => {
-                format!("https://gateway.{envtag}.nado.xyz/v1")
+                format!("https://gateway.{envtag}.nado-backend.xyz/v1")
             }
         }
     }
@@ -30,7 +31,7 @@ impl ClientMode {
                 format!("http://trigger.{envtag}.nado.xyz:8080/v1")
             }
             _ => {
-                format!("https://trigger.{envtag}.nado.xyz/v1")
+                format!("https://trigger.{envtag}.nado-backend.xyz/v1")
             }
         }
     }
@@ -42,7 +43,7 @@ impl ClientMode {
                 format!("http://archive.{envtag}.nado.xyz:8000/v1")
             }
             _ => {
-                format!("https://archive.{envtag}.nado.xyz/v1")
+                format!("https://archive.{envtag}.nado-backend.xyz/v1")
             }
         }
     }
@@ -54,7 +55,7 @@ impl ClientMode {
                 format!("ws://gateway.{envtag}.nado.xyz:80/ws")
             }
             _ => {
-                format!("wss://gateway.{envtag}.nado.xyz/ws")
+                format!("wss://gateway.{envtag}.nado-backend.xyz/ws")
             }
         }
     }
@@ -97,6 +98,7 @@ impl ClientMode {
 
     pub fn nado_envtag(&self) -> String {
         match self {
+            Self::Test => "test",
             Self::Local => "local",
             Self::LocalAlt => "local-alt",
         }
@@ -105,6 +107,7 @@ impl ClientMode {
 
     pub fn from_envtag(envtag: &str) -> Self {
         match envtag {
+            "test" => Self::Test,
             "local" => Self::Local,
             "local-alt" => Self::LocalAlt,
             _ => panic!("Unknown envtag: {}", envtag),

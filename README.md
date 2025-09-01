@@ -9,7 +9,7 @@ This is the Rust SDK for the [Nado Protocol API](TODO).
 ## Quickstart
 
 Instantiate a client on the chain you would like to interact with.
-For example, `ClientMode::InkTest` to use Ink testnet and `ClientMode::InkProd` to use Ink mainnet, etc.
+For example, `ClientMode::Test` to use Ink testnet and `ClientMode::Prod` to use Ink mainnet, etc.
 A signer (private key) is required for executes.
 A signer is not required for queries.
 For requests with many parameters, use the client to build and send requests.
@@ -60,7 +60,7 @@ Add the following line to your Cargo.toml file:
 
 ```toml
 [dependencies]
-nado_sdk = "0.1.0"
+nado_sdk = "0.2.0"
 ```
 
 ## Usage
