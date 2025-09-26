@@ -17,7 +17,6 @@ pub enum Product {
         short_weight_maintenance: f64,
         size_increment: f64,
         price_increment: f64,
-        grid_depth: f64,
         interest_inflection_util: f64,
         interest_floor: f64,
         interest_small_cap: f64,
@@ -43,7 +42,6 @@ pub enum Product {
         short_weight_maintenance: f64,
         size_increment: f64,
         price_increment: f64,
-        grid_depth: f64,
         initial_price: f64,
         price_asset_id: String,
         spot_index_asset_id: String,
@@ -67,6 +65,66 @@ impl Product {
             Product::Spot { min_size, .. } | Product::Perp { min_size, .. } => {
                 to_i128_fp(*min_size)
             }
+        }
+    }
+
+    pub fn size_increment(&self) -> i128 {
+        match self {
+            Product::Spot { size_increment, .. } | Product::Perp { size_increment, .. } => {
+                to_i128_fp(*size_increment)
+            }
+        }
+    }
+
+    pub fn long_weight_initial(&self) -> i128 {
+        match self {
+            Product::Spot {
+                long_weight_initial,
+                ..
+            }
+            | Product::Perp {
+                long_weight_initial,
+                ..
+            } => to_i128_fp(*long_weight_initial),
+        }
+    }
+
+    pub fn long_weight_maintenance(&self) -> i128 {
+        match self {
+            Product::Spot {
+                long_weight_maintenance,
+                ..
+            }
+            | Product::Perp {
+                long_weight_maintenance,
+                ..
+            } => to_i128_fp(*long_weight_maintenance),
+        }
+    }
+
+    pub fn short_weight_initial(&self) -> i128 {
+        match self {
+            Product::Spot {
+                short_weight_initial,
+                ..
+            }
+            | Product::Perp {
+                short_weight_initial,
+                ..
+            } => to_i128_fp(*short_weight_initial),
+        }
+    }
+
+    pub fn short_weight_maintenance(&self) -> i128 {
+        match self {
+            Product::Spot {
+                short_weight_maintenance,
+                ..
+            }
+            | Product::Perp {
+                short_weight_maintenance,
+                ..
+            } => to_i128_fp(*short_weight_maintenance),
         }
     }
 

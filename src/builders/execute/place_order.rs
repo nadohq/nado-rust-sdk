@@ -24,6 +24,8 @@ nado_builder!(
     order_type: eip712_structs::OrderType,
     reduce_only: bool,
     trigger_criteria: TriggerCriteria,
+    times: u32,
+    slippage_x6: u32,
     nonce: u64,
     appendix: u128,
     recv_time: u64,
@@ -146,9 +148,25 @@ nado_builder!(
         }
         appendix |= order_type.appendix_bit();
         let nonce = self.nonce.unwrap_or(order_nonce(self.recv_time));
-        if self.trigger_criteria.is_some() {
-            appendix |= 1 << 12;
-        }
+
+        if let Some(trigger) = self.trigger_criteria.as_ref() {
+            match trigger {
+                TriggerCriteria::PriceTrigger {..} => { appendix |= 1 << 12;},
+                TriggerCriteria::TimeTrigger {amounts, ..} => {
+                    assert!(!self.isolated.unwrap_or(false), "time trigger orders cannot be isolated");
+                    let times = self.times.unwrap();
+                    let slippage_x6 = self.slippage_x6.ok_or(none_error("slippage_x6"))?;
+
+                    appendix |= (times as u128) << 96;
+                    appendix |= (slippage_x6  as u128) << 64;
+                    appendix |= match amounts {
+                        Some(_) => 3 << 12,
+                        None => 2 << 12,
+                    };
+                }
+            }
+
+        };
 
         let default_sender = self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);

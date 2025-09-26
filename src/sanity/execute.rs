@@ -3,7 +3,7 @@ use eyre::Result;
 use crate::eip712_structs::OrderType;
 use crate::engine::OrderResponse;
 use crate::math::{f64_to_x18, to_i128_x18, to_u128_x6};
-use crate::trigger::TriggerCriteria;
+use crate::trigger::{PriceRequirement, TriggerCriteria};
 
 use crate::prelude::*;
 use crate::utils::private_key::private_key;
@@ -172,7 +172,10 @@ async fn trigger(client: &NadoClient) {
         .amount(f64_to_x18(-0.01))
         .price_x18(to_i128_x18(39000))
         .order_type(OrderType::FillOrKill)
-        .trigger_criteria(TriggerCriteria::PriceAbove(to_i128_x18(37000)));
+        .trigger_criteria(TriggerCriteria::PriceTrigger {
+            price_requirement: PriceRequirement::OraclePriceAbove(to_i128_x18(37000)),
+            dependency: None,
+        });
 
     let mut trigger_order = trigger_order_builder.build_trigger().unwrap();
     let digest = trigger_order.digest.unwrap();
@@ -180,7 +183,7 @@ async fn trigger(client: &NadoClient) {
 
     let trigger_order_query = client
         .list_trigger_orders_builder()
-        .product_id(product_id)
+        .product_ids(vec![product_id])
         .pending(true);
 
     let mut trigger_orders = trigger_order_query.query().await.unwrap();

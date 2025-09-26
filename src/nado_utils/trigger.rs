@@ -1,7 +1,7 @@
 use crate::eip712_structs::{Cancellation, ListTriggerOrders};
 use crate::eip712_structs::{CancellationProducts, Order};
 use crate::engine::{ExecuteResponse, PlaceOrder, Status};
-use crate::serialize_utils::{deserialize_i128, serialize_i128, WrappedBytes32};
+use crate::serialize_utils::{deserialize_i128, serialize_i128, WrappedBytes32, WrappedI128};
 use ethers::types::{Bytes, H256};
 use eyre::Result;
 use serde::{Deserialize, Serialize};
@@ -14,43 +14,59 @@ pub enum CancelReason {
     Expired,
     AccountHealth,
     IsolatedSubaccountClosed,
+    DependentOrderCancelled,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ExecuteStatus {
+    pub execute_response: ExecuteResponse,
+    pub place_time: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TriggerOrderStatus {
-    Pending,
-    Triggering,
-    Triggered(ExecuteResponse),
     Cancelled(CancelReason),
+    Triggered(ExecuteResponse),
     InternalError(String),
+    Triggering,
+    WaitingPrice,
+    WaitingDependency,
+    // TWAP-specific statuses
+    TwapExecuting {
+        current_execution: u32,
+        total_executions: u32,
+    },
+    TwapCompleted {
+        executed: u32,
+        total: u32,
+    },
 }
 
 impl TriggerOrderStatus {
-    pub fn pending(&self) -> bool {
-        match self {
-            TriggerOrderStatus::Pending => true,
-            _ => false,
-        }
-    }
-
     pub fn byte(&self) -> i32 {
-        match self {
-            TriggerOrderStatus::Pending => 0,
-            TriggerOrderStatus::Triggering => 1,
-            TriggerOrderStatus::Triggered(_) => 2,
-            TriggerOrderStatus::Cancelled(_) => 3,
-            TriggerOrderStatus::InternalError(_) => 4,
-        }
+        (match self {
+            Self::Cancelled(_) => TriggerOrderStatusType::Cancelled,
+            Self::Triggered(_) => TriggerOrderStatusType::Triggered,
+            Self::InternalError(_) => TriggerOrderStatusType::InternalError,
+            Self::Triggering => TriggerOrderStatusType::Triggering,
+            Self::WaitingPrice => TriggerOrderStatusType::WaitingPrice,
+            Self::WaitingDependency => TriggerOrderStatusType::WaitingDependency,
+            Self::TwapExecuting { .. } => TriggerOrderStatusType::TwapExecuting,
+            Self::TwapCompleted { .. } => TriggerOrderStatusType::TwapCompleted,
+        }) as i32
     }
 
     pub fn byte_from_str(s: &str) -> Result<i32> {
         match s {
-            "pending" => Ok(0),
-            "triggering" => Ok(1),
-            "triggered" => Ok(2),
-            "cancelled" => Ok(3),
-            "internal_error" => Ok(4),
+            "cancelled" => Ok(0),
+            "triggered" => Ok(1),
+            "internal_error" => Ok(2),
+            "triggering" => Ok(3),
+            "waiting_price" => Ok(4),
+            "waiting_dependency" => Ok(5),
+            "twap_executing" => Ok(6),
+            "twap_completed" => Ok(7),
             _ => Err(eyre::eyre!("Invalid status string")),
         }
     }
@@ -67,15 +83,33 @@ impl TriggerOrderStatus {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum TriggerCriteria {
-    // on the oracle price
-    PriceAbove(
+    PriceTrigger {
+        price_requirement: PriceRequirement,
+        dependency: Option<Dependency>,
+    },
+    TimeTrigger {
+        interval: u64,
+        amounts: Option<Vec<WrappedI128>>,
+    },
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct Dependency {
+    pub digest: H256,
+    pub on_partial_fill: bool, // trigger on partial fill
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum PriceRequirement {
+    OraclePriceAbove(
         #[serde(
             serialize_with = "serialize_i128",
             deserialize_with = "deserialize_i128"
         )]
         i128,
     ),
-    PriceBelow(
+    OraclePriceBelow(
         #[serde(
             serialize_with = "serialize_i128",
             deserialize_with = "deserialize_i128"
@@ -115,28 +149,99 @@ pub enum TriggerCriteria {
     ),
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TriggerType {
+    PriceTrigger = 0,
+    TimeTrigger = 1,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TriggerOrderStatusType {
+    Cancelled = 0,
+    Triggered = 1,
+    InternalError = 2,
+    Triggering = 3,
+    WaitingPrice = 4,
+    WaitingDependency = 5,
+    TwapExecuting = 6,
+    TwapCompleted = 7,
+}
+
+impl TriggerOrderStatusType {
+    pub fn pending() -> Vec<Self> {
+        vec![
+            Self::WaitingPrice,
+            Self::WaitingDependency,
+            Self::TwapExecuting,
+        ]
+    }
+    pub fn pending_byte() -> Vec<i32> {
+        Self::pending().into_iter().map(|x| x as i32).collect()
+    }
+}
+
 impl TriggerCriteria {
     pub fn byte(&self) -> i32 {
         match self {
-            TriggerCriteria::PriceAbove(_) => 0,
-            TriggerCriteria::PriceBelow(_) => 1,
-            TriggerCriteria::LastPriceAbove(_) => 2,
-            TriggerCriteria::LastPriceBelow(_) => 3,
-            TriggerCriteria::MidPriceAbove(_) => 4,
-            TriggerCriteria::MidPriceBelow(_) => 5,
+            Self::PriceTrigger { .. } => 0,
+            Self::TimeTrigger { .. } => 1,
         }
     }
 
-    pub fn price(&self) -> String {
-        let p = match self {
-            TriggerCriteria::PriceAbove(price) => *price,
-            TriggerCriteria::PriceBelow(price) => *price,
-            TriggerCriteria::LastPriceAbove(price) => *price,
-            TriggerCriteria::LastPriceBelow(price) => *price,
-            TriggerCriteria::MidPriceAbove(price) => *price,
-            TriggerCriteria::MidPriceBelow(price) => *price,
-        };
-        format!("{:0>40}", p)
+    pub fn price_str(&self) -> Option<String> {
+        match self {
+            Self::PriceTrigger {
+                price_requirement, ..
+            } => Some(price_requirement.price_str()),
+            _ => None,
+        }
+    }
+
+    pub fn criteria_price_byte(&self) -> Option<i32> {
+        match self {
+            Self::PriceTrigger {
+                price_requirement, ..
+            } => Some(price_requirement.byte()),
+            _ => None,
+        }
+    }
+
+    pub fn dependency(&self) -> Option<[u8; 32]> {
+        match self {
+            Self::PriceTrigger { dependency, .. } => dependency.clone().map(|x| x.digest.0),
+            _ => None,
+        }
+    }
+}
+
+impl PriceRequirement {
+    pub fn byte(&self) -> i32 {
+        match self {
+            Self::OraclePriceAbove(_) => 0,
+            Self::OraclePriceBelow(_) => 1,
+            Self::LastPriceAbove(_) => 2,
+            Self::LastPriceBelow(_) => 3,
+            Self::MidPriceAbove(_) => 4,
+            Self::MidPriceBelow(_) => 5,
+        }
+    }
+
+    pub fn price(&self) -> i128 {
+        match self {
+            Self::OraclePriceAbove(price) => *price,
+            Self::OraclePriceBelow(price) => *price,
+            Self::LastPriceAbove(price) => *price,
+            Self::LastPriceBelow(price) => *price,
+            Self::MidPriceAbove(price) => *price,
+            Self::MidPriceBelow(price) => *price,
+        }
+    }
+
+    pub fn price_str(&self) -> String {
+        // for postgresql indexing, which doesn't support i128
+        format!("{:0>40}", self.price())
     }
 }
 
@@ -181,6 +286,19 @@ impl PlaceTriggerOrder {
     pub fn is_bid(&self) -> bool {
         self.order.amount.is_positive()
     }
+
+    pub fn trigger_amount(&self, index: u32) -> Option<i128> {
+        if !self.order.is_twap_random() {
+            None
+        } else {
+            match &self.trigger {
+                TriggerCriteria::TimeTrigger { amounts, .. } => {
+                    Some(amounts.as_ref().unwrap()[index as usize].0)
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -206,12 +324,17 @@ pub enum Query {
     ListTriggerOrders {
         tx: ListTriggerOrders,
         signature: Bytes,
-        product_id: Option<u32>,
-        pending: bool,
+        product_ids: Option<Vec<u32>>,
+        trigger_types: Option<Vec<TriggerType>>,
+        status_types: Option<Vec<TriggerOrderStatusType>>,
         max_update_time: Option<u64>,
         max_digest: Option<WrappedBytes32>,
         digests: Option<Vec<WrappedBytes32>>,
         limit: Option<u32>,
+        reduce_only: Option<bool>,
+    },
+    ListTwapExecutions {
+        digest: WrappedBytes32,
     },
 }
 
@@ -235,11 +358,47 @@ impl ListTriggerOrdersResponse {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TwapExecutionStatusData {
+    Pending,
+    Executed {
+        executed_time: i64,
+        execute_response: ExecuteResponse,
+    },
+    Failed(String),
+    Cancelled(CancelReason),
+}
+
+impl TwapExecutionStatusData {
+    pub fn data(&self) -> Vec<u8> {
+        serde_json::to_vec(self).unwrap()
+    }
+
+    pub fn from_status_data(data: &[u8]) -> Self {
+        serde_json::from_slice(data).unwrap()
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ListTwapExecutionsResponse {
+    pub executions: Vec<TwapExecutionDetail>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TwapExecutionDetail {
+    pub execution_id: u32,
+    pub scheduled_time: i64,
+    pub status: TwapExecutionStatusData,
+    pub updated_at: i64,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[serde(untagged)]
 pub enum QueryResponseData {
     ListTriggerOrders(ListTriggerOrdersResponse),
+    ListTwapExecutions(ListTwapExecutionsResponse),
     Error(String),
 }
 

@@ -2,6 +2,7 @@
 
 use crate::bindings::{endpoint, offchain_exchange};
 use crate::isolated::is_isolated_subaccount;
+use crate::math::{mul_x18, ONE_X18, ONE_X6};
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_u128, deserialize_u64,
     deserialize_vec_bytes32, serialize_bytes20, serialize_bytes32, serialize_i128, serialize_u128,
@@ -10,6 +11,7 @@ use crate::serialize_utils::{
 use ethers::prelude::*;
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
+use std::cmp::{max, min};
 use std::fmt;
 use std::fmt::Debug;
 
@@ -177,6 +179,54 @@ impl Order {
 
     pub fn is_trigger_order(&self) -> bool {
         (self.appendix >> 12 & 3) > 0
+    }
+
+    pub fn is_price_trigger(&self) -> bool {
+        (self.appendix >> 12 & 3) == 1
+    }
+
+    pub fn is_twap(&self) -> bool {
+        (self.appendix >> 12 & 3) >= 2
+    }
+
+    pub fn is_twap_random(&self) -> bool {
+        (self.appendix >> 12 & 3) == 3
+    }
+
+    pub fn twap_times(&self) -> Option<u32> {
+        if self.is_twap() {
+            Some((self.appendix >> 96) as u32)
+        } else {
+            None
+        }
+    }
+
+    pub fn twap_slippage_x6(&self) -> Option<u32> {
+        if self.is_twap() {
+            Some((self.appendix >> 64 & ((1 << 32) - 1)) as u32)
+        } else {
+            None
+        }
+    }
+
+    pub fn order_price(&self, oracle_price: i128) -> i128 {
+        let mut price = self.priceX18;
+        if self.is_twap() {
+            let slippage = self.twap_slippage_x6().unwrap() as i128 * ONE_X18 / ONE_X6;
+
+            let twap_price = if self.amount.is_positive() {
+                mul_x18(oracle_price, ONE_X18 + slippage)
+            } else {
+                mul_x18(oracle_price, ONE_X18 - slippage)
+            };
+
+            if self.amount.is_positive() {
+                price = min(price, twap_price);
+            } else {
+                price = max(price, twap_price);
+            }
+        }
+        price
     }
 
     pub fn is_isolated(&self) -> bool {

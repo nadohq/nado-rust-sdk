@@ -15,14 +15,17 @@ use eyre::Result;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-pub type NadoProvider =
-    SignerMiddleware<Provider<RetryClient<Http>>, Wallet<k256::ecdsa::SigningKey>>;
+pub type HttpRetryProvider = Provider<RetryClient<Http>>;
+
+pub type HttpEnsembleRetryProvider = Provider<RetryClient<HttpEnsemble>>;
+
+pub type NadoProvider = SignerMiddleware<HttpRetryProvider, Wallet<k256::ecdsa::SigningKey>>;
 
 pub type NadoEnsembleProvider =
-    SignerMiddleware<Provider<RetryClient<HttpEnsemble>>, Wallet<k256::ecdsa::SigningKey>>;
+    SignerMiddleware<HttpEnsembleRetryProvider, Wallet<k256::ecdsa::SigningKey>>;
 
 /// Client that uses a different node url on failure
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpEnsemble {
     pub providers: Vec<Http>,
 }
@@ -41,7 +44,7 @@ impl HttpEnsemble {
         Ok(Provider::new(http_ensemble))
     }
 
-    pub fn new_retry_provider(node_urls: &Vec<String>) -> Result<Provider<RetryClient<Self>>> {
+    pub fn new_retry_provider(node_urls: &Vec<String>) -> Result<HttpEnsembleRetryProvider> {
         let http_ensemble = Self::new(node_urls)?;
         Ok(Provider::new(RetryClient::new(
             http_ensemble,

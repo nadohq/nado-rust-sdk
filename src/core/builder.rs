@@ -25,11 +25,14 @@ use crate::builders::indexer::product_snapshots::ProductSnapshotsBuilder;
 use crate::builders::indexer::rewards::RewardsBuilder;
 use crate::builders::indexer::subaccounts::SubaccountsBuilder;
 use crate::builders::indexer::trades::TradesParamsBuilder;
+use crate::builders::query::max_nlp_burnable::MaxNlpBurnableBuilder;
 use crate::builders::query::max_nlp_mintable::MaxNlpMintableBuilder;
 use crate::builders::query::max_order_size::MaxOrderSizeBuilder;
 use crate::builders::query::max_withdrawable::MaxWithdrawableBuilder;
+use crate::builders::query::nlp_locked_balances::NlpLockedBalancesBuilder;
 use crate::builders::query::nlp_pool_info::NlpPoolInfoBuilder;
 use crate::builders::trigger::list_trigger_orders::ListTriggerOrdersBuilder;
+use crate::builders::trigger::list_twap_executions::ListTwapExecutionsBuilder;
 use crate::builders::utils::fee_calculator::FeeCalculator;
 
 use crate::core::execute::NadoExecute;
@@ -54,6 +57,7 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
     get_nado_builder!(deposit_collateral_builder, DepositCollateralBuilder);
     get_nado_builder!(place_order_builder, PlaceOrderBuilder);
     get_nado_builder!(list_trigger_orders_builder, ListTriggerOrdersBuilder);
+    get_nado_builder!(list_twap_executions_builder, ListTwapExecutionsBuilder);
     get_nado_builder!(cancellation_builder, CancellationBuilder);
     get_nado_builder!(cancellation_products_builder, CancellationProductsBuilder);
     get_nado_builder!(liquidate_subaccount_builder, LiquidateSubaccountBuilder);
@@ -68,7 +72,9 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
     get_nado_builder!(get_max_order_size_builder, MaxOrderSizeBuilder);
     get_nado_builder!(get_max_withdrawable_builder, MaxWithdrawableBuilder);
     get_nado_builder!(get_max_nlp_mintable_builder, MaxNlpMintableBuilder);
+    get_nado_builder!(get_max_nlp_burnable_builder, MaxNlpBurnableBuilder);
     get_nado_builder!(get_nlp_pool_info_builder, NlpPoolInfoBuilder);
+    get_nado_builder!(get_nlp_locked_balances_builder, NlpLockedBalancesBuilder);
 
     get_nado_builder!(get_candlesticks_builder, CandlesticksBuilder);
     get_nado_builder!(get_historical_orders_builder, HistoricalOrdersBuilder);
