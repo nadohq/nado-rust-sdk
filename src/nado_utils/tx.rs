@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use ethers::abi::AbiEncode;
 use ethers::prelude::*;
 use ethers::types::transaction::eip712::Eip712;
 use ethers_core::types::transaction::eip712::EIP712Domain;
@@ -44,6 +45,8 @@ pub enum TxType {
     AddNlpPool = 25,
     UpdateNlpPool = 26,
     DeleteNlpPool = 27,
+    AssertProduct = 28,
+    CloseIsolatedSubaccount = 29,
 }
 
 impl TxType {
@@ -77,6 +80,8 @@ impl TxType {
             25 => Self::AddNlpPool,
             26 => Self::UpdateNlpPool,
             27 => Self::DeleteNlpPool,
+            28 => Self::AssertProduct,
+            29 => Self::CloseIsolatedSubaccount,
             _ => panic!("Invalid TxType"),
         }
     }
@@ -122,6 +127,7 @@ pub enum NadoTx {
     ManualAssert(endpoint::ManualAssert),
 
     MatchOrders(endpoint::MatchOrders),
+    MatchOrdersWithAmount(endpoint::MatchOrdersWithAmount),
     ExecuteSlowMode,
     TransferQuote(endpoint::TransferQuote),
     RebalanceXWithdraw(endpoint::RebalanceXWithdraw),
@@ -136,6 +142,8 @@ pub enum NadoTx {
     AddNlpPool(endpoint::AddNlpPool),
     UpdateNlpPool(endpoint::UpdateNlpPool),
     DeleteNlpPool(endpoint::DeleteNlpPool),
+    AssertProduct(endpoint::AssertProduct),
+    CloseIsolatedSubaccount(endpoint::CloseIsolatedSubaccount),
     Other,
 }
 
@@ -149,6 +157,7 @@ impl NadoTx {
             NadoTx::UpdatePrice(_) => TxType::UpdatePrice,
             NadoTx::SettlePnl(_) => TxType::SettlePnl,
             NadoTx::MatchOrders(_) => TxType::MatchOrders,
+            NadoTx::MatchOrdersWithAmount(_) => TxType::MatchOrdersWithAmount,
             NadoTx::ExecuteSlowMode => TxType::ExecuteSlowMode,
             NadoTx::ManualAssert(_) => TxType::ManualAssert,
             NadoTx::PerpTick(_) => TxType::PerpTick,
@@ -166,7 +175,34 @@ impl NadoTx {
             NadoTx::AddNlpPool(_) => TxType::AddNlpPool,
             NadoTx::UpdateNlpPool(_) => TxType::UpdateNlpPool,
             NadoTx::DeleteNlpPool(_) => TxType::DeleteNlpPool,
+            NadoTx::AssertProduct(_) => TxType::AssertProduct,
+            NadoTx::CloseIsolatedSubaccount(_) => TxType::CloseIsolatedSubaccount,
             NadoTx::Other => panic!("Other is not a valid tx type"),
         }
     }
+}
+
+pub fn assert_product(
+    product_id: u32,
+    is_spot: bool,
+    quote_id: u32,
+    size_increment: i128,
+    min_size: i128,
+    others_hash: [u8; 32],
+) -> Bytes {
+    Bytes::from(
+        [
+            vec![TxType::AssertProduct as u8],
+            endpoint::AssertProductReturn(endpoint::AssertProduct {
+                product_id,
+                is_spot,
+                quote_id,
+                size_increment,
+                min_size,
+                others_hash,
+            })
+            .encode(),
+        ]
+        .concat(),
+    )
 }

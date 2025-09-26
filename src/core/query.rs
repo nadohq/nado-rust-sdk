@@ -7,13 +7,13 @@ use crate::engine::{
     AllProductsResponse, AssetsResponse, ContractsResponse, EngineStatus, FeeRatesResponse,
     HealthGroupsResponse, InsuranceResponse, IsolatedPositionsResponse, LinkedSignerResponse,
     MarketLiquidityResponse, MarketPairsParams, MarketPairsResponse, MarketPriceResponse,
-    MarketPricesResponse, MaxNlpMintableResponse, MaxOrderSizeResponse, MaxWithdrawableResponse,
-    NlpPoolInfoResponse, NoncesResponse, OrderResponse, OrderbookParams, OrderbookResponse, Query,
-    QueryResponseData, QueryV2, SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse,
-    Txn,
+    MarketPricesResponse, MaxNlpBurnableResponse, MaxNlpMintableResponse, MaxOrderSizeResponse,
+    MaxWithdrawableResponse, NlpLockedBalancesResponse, NlpPoolInfoResponse, NoncesResponse,
+    OrderResponse, OrderbookParams, OrderbookResponse, Query, QueryResponseData, QueryV2,
+    SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse, Txn,
 };
 use crate::trigger;
-use crate::trigger::ListTriggerOrdersResponse;
+use crate::trigger::{ListTriggerOrdersResponse, ListTwapExecutionsResponse};
 
 use crate::core::base::NadoBase;
 use crate::map_response;
@@ -154,9 +154,25 @@ pub trait NadoQuery: NadoBase + Sync {
         map_response!(query_response, QueryResponseData::MaxNlpMintable)
     }
 
+    async fn get_max_nlp_burnable(
+        &self,
+        max_nlp_burnable_query: Query,
+    ) -> Result<MaxNlpBurnableResponse> {
+        let query_response = self.query(max_nlp_burnable_query).await?;
+        map_response!(query_response, QueryResponseData::MaxNlpBurnable)
+    }
+
     async fn get_nlp_pool_info(&self, nlp_pool_info_query: Query) -> Result<NlpPoolInfoResponse> {
         let query_response = self.query(nlp_pool_info_query).await?;
         map_response!(query_response, QueryResponseData::NlpPoolInfo)
+    }
+
+    async fn get_nlp_locked_balances(
+        &self,
+        nlp_locked_balances_query: Query,
+    ) -> Result<NlpLockedBalancesResponse> {
+        let query_response = self.query(nlp_locked_balances_query).await?;
+        map_response!(query_response, QueryResponseData::NlpLockedBalances)
     }
 
     async fn get_health_groups(&self) -> Result<HealthGroupsResponse> {
@@ -191,6 +207,17 @@ pub trait NadoQuery: NadoBase + Sync {
         map_response!(
             query_response,
             trigger::QueryResponseData::ListTriggerOrders
+        )
+    }
+
+    async fn list_twap_executions(
+        &self,
+        list_twap_executions: trigger::Query,
+    ) -> Result<ListTwapExecutionsResponse> {
+        let query_response = self.query_trigger(list_twap_executions).await?;
+        map_response!(
+            query_response,
+            trigger::QueryResponseData::ListTwapExecutions
         )
     }
 

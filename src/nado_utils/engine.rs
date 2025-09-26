@@ -199,6 +199,14 @@ pub enum Query {
         spot_leverage: Option<String>,
     },
 
+    MaxNlpBurnable {
+        #[serde(
+            serialize_with = "serialize_bytes32",
+            deserialize_with = "deserialize_bytes32"
+        )]
+        sender: [u8; 32],
+    },
+
     IsolatedPositions {
         #[serde(
             serialize_with = "serialize_bytes32",
@@ -219,6 +227,14 @@ pub enum Query {
     },
 
     NlpPoolInfo {},
+
+    NlpLockedBalances {
+        #[serde(
+            serialize_with = "serialize_bytes32",
+            deserialize_with = "deserialize_bytes32"
+        )]
+        subaccount: [u8; 32],
+    },
 }
 
 #[derive(Archive, RkyvDeserialize, RkyvSerialize, Clone, Serialize, Deserialize, Debug)]
@@ -740,6 +756,8 @@ pub struct OrderResponse {
     )]
     pub digest: [u8; 32],
     pub placed_at: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<u64>,
 }
 
 #[derive(
@@ -813,6 +831,7 @@ pub struct FeeRatesResponse {
         deserialize_with = "deserialize_vec_i128"
     )]
     pub withdraw_sequencer_fees: Vec<i128>,
+    pub fee_tier: u32,
 }
 
 #[derive(
@@ -971,6 +990,30 @@ pub struct MaxNlpMintableResponse {
 #[archive(check_bytes)]
 // #[ts(export)]
 // #[ts(export_to = "tsBindings/msgResponses/")]
+pub struct MaxNlpBurnableResponse {
+    // #[ts(type = "string")]
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub max_nlp_amount: i128,
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+// #[ts(export)]
+// #[ts(export_to = "tsBindings/msgResponses/")]
 pub struct HealthGroupsResponse {
     // #[ts(type = "string")]
     pub health_groups: Vec<(u32, u32)>,
@@ -1017,7 +1060,6 @@ pub struct SymbolsResponse {
     pub symbols: HashMap<String, SymbolsResponseData>,
 }
 
-// @need review, is manualy coded, should here be automatically generated?
 #[derive(
     Clone,
     Debug,
@@ -1053,6 +1095,43 @@ pub struct NlpPool {
 #[archive(check_bytes)]
 pub struct NlpPoolInfoResponse {
     pub nlp_pools: Vec<NlpPool>,
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+pub struct NlpLockedBalance {
+    pub balance: SpotBalance,
+    pub unlocked_at: u64,
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+pub struct NlpLockedBalancesResponse {
+    pub balance_locked: SpotBalance,
+    pub balance_unlocked: SpotBalance,
+    pub locked_balances: Vec<NlpLockedBalance>,
 }
 
 #[derive(
@@ -1387,11 +1466,13 @@ pub enum QueryResponseData {
     MaxOrderSize(MaxOrderSizeResponse),
     MaxWithdrawable(MaxWithdrawableResponse),
     MaxNlpMintable(MaxNlpMintableResponse),
+    MaxNlpBurnable(MaxNlpBurnableResponse),
     HealthGroups(HealthGroupsResponse),
     Insurance(InsuranceResponse),
     Symbols(SymbolsResponse),
     IsolatedPositions(IsolatedPositionsResponse),
     NlpPoolInfo(NlpPoolInfoResponse),
+    NlpLockedBalances(NlpLockedBalancesResponse),
     Error(String),
 }
 
