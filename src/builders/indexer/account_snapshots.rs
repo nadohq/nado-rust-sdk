@@ -12,7 +12,8 @@ nado_builder!(
     NadoIndexer,
     subaccounts: Vec<[u8; 32]>,
     timestamps: Vec<u64>,
-    isolated: bool;
+    isolated: bool,
+    active: bool;
 
     build_and_call!(self, query, get_account_snapshots => AccountSnapshotsResponse);
 
@@ -24,6 +25,7 @@ nado_builder!(
             subaccounts,
             timestamps,
             isolated: self.isolated,
+            active: self.active,
         })
     }
 

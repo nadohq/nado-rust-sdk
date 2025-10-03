@@ -8,12 +8,14 @@ use eyre::{eyre, Result};
 use crate::indexer;
 use crate::indexer::OrdersResponse;
 use crate::serialize_utils::WrappedU32;
+use crate::trigger::TriggerType;
 
 nado_builder!(
     HistoricalOrdersBuilder,
     NadoIndexer,
     subaccount: [u8; 32],
     product_ids: Vec<u32>,
+    trigger_types: Vec<TriggerType>,
     max_time: u64,
     limit: u32,
     idx: u64,
@@ -25,6 +27,7 @@ nado_builder!(
     pub fn build(&self) -> Result<indexer::Query> {
         self.validate_build_conditions()?;
         let product_ids = wrapped_option_vec_u32(self.product_ids.clone());
+        let trigger_types = self.trigger_types.clone();
 
         Ok(indexer::Query::Orders {
             subaccount: wrapped_option_bytes32(self.subaccount),
@@ -34,6 +37,7 @@ nado_builder!(
             limit: self.limit.map(WrappedU32),
             idx: wrapped_option_u64(self.idx),
             isolated: self.isolated,
+            trigger_types,
         })
     }
 

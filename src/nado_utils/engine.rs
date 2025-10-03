@@ -177,6 +177,7 @@ pub enum Query {
         direction: Direction,
         spot_leverage: Option<String>,
         reduce_only: Option<String>,
+        isolated: Option<String>,
     },
 
     MaxWithdrawable {
@@ -1075,8 +1076,20 @@ pub struct SymbolsResponse {
 #[archive(check_bytes)]
 pub struct NlpPool {
     pub pool_id: u64,
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
     pub subaccount: [u8; 32],
+    #[serde(
+        serialize_with = "serialize_bytes20",
+        deserialize_with = "deserialize_bytes20"
+    )]
     pub owner: [u8; 20],
+    #[serde(
+        serialize_with = "serialize_u128",
+        deserialize_with = "deserialize_u128"
+    )]
     pub balance_weight_x18: u128,
 }
 

@@ -2,7 +2,7 @@
     "nodeUrl": "https://rpc-gel-sepolia.inkonchain.com",
     "explorerUrl": "https://explorer-sepolia.inkonchain.com",
     "startBlock": 27233833,
-    "quote": "0x5F65358d61A9a281ea3BB930d05889ACa21E3f4f",
+    "quote": "0x1A0131CbF95D056fd1A9F0980c1Cda5089262b12",
     "querier": "0x5A62e748b2630560Ffe9E928780cF9Fe0e086A21",
     "clearinghouse": "0x5E9b4336104069467E57E843033e62c79C667F8F",
     "endpoint": "0xf8963f7860aF7DE9b94893EDb9A3b5c155e1Fc0c",

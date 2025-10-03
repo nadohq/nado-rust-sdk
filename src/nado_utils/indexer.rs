@@ -89,6 +89,7 @@ pub enum Query {
         limit: Option<WrappedU32>,
         idx: Option<WrappedU64>,
         isolated: Option<bool>,
+        trigger_types: Option<Vec<crate::trigger::TriggerType>>,
     },
 
     Summary {
@@ -98,12 +99,16 @@ pub enum Query {
         )]
         subaccount: [u8; 32],
         timestamp: Option<TimestampOrTimestamps>,
+        #[serde(default)]
+        active: Option<bool>,
     },
 
     AccountSnapshots {
         subaccounts: Vec<WrappedBytes32>,
         timestamps: Vec<WrappedU64>,
         isolated: Option<bool>,
+        #[serde(default)]
+        active: Option<bool>,
     },
 
     Matches {
@@ -558,6 +563,11 @@ pub struct Event {
         deserialize_with = "deserialize_i128"
     )]
     pub net_entry_cumulative: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub cumulative_volume: i128,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -154,6 +154,17 @@ pub enum PriceRequirement {
 pub enum TriggerType {
     PriceTrigger = 0,
     TimeTrigger = 1,
+    None = 2,
+}
+
+impl TriggerType {
+    pub fn from_appendix(appendix: u128) -> Self {
+        match appendix >> 12 & 3 {
+            1 => Self::PriceTrigger,
+            2 | 3 => Self::TimeTrigger,
+            _ => Self::None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -342,6 +353,7 @@ pub enum Query {
 pub struct TriggerOrderInfo {
     pub order: PlaceTriggerOrder,
     pub status: TriggerOrderStatus,
+    pub placed_at: u64,
     pub updated_at: u64,
 }
 
