@@ -15,7 +15,8 @@ nado_builder!(
     price_x18: i128,
     direction: Direction,
     spot_leverage: bool,
-    reduce_only: bool;
+    reduce_only: bool,
+    isolated: bool;
 
     build_and_call!(self, query, get_max_order_size => MaxOrderSizeResponse);
 
@@ -28,6 +29,7 @@ nado_builder!(
             direction,
             spot_leverage: optional_bool_to_string(self.spot_leverage),
             reduce_only: optional_bool_to_string(self.reduce_only),
+            isolated: optional_bool_to_string(self.isolated),
         })
     }
 );

@@ -96,6 +96,7 @@ pub trait NadoIndexer: NadoBase {
         let query = Query::Summary {
             subaccount,
             timestamp,
+            active: None,
         };
         self.query(query).await
     }

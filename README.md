@@ -21,7 +21,7 @@ See [`basic_usage.rs`](examples/basic_usage.rs) for an E2E example including dep
 use nado_sdk::prelude::*;
 
 async fn main() {
-    let client = NadoClient::new(ClientMode::InkProd)
+    let client = NadoClient::new(ClientMode::Test)
         .with_signer(private_key())
         .await
         .unwrap();
@@ -60,7 +60,7 @@ Add the following line to your Cargo.toml file:
 
 ```toml
 [dependencies]
-nado_sdk = "0.2.1"
+nado_sdk = "0.2.2"
 ```
 
 ## Usage
