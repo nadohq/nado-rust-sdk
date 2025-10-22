@@ -14,4 +14,5 @@ pub struct Deployment {
     pub querier: H160,
     pub offchain_exchange: H160,
     pub verifier: H160,
+    pub contract_owner: H160,
 }

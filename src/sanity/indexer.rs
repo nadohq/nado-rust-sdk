@@ -30,8 +30,13 @@ pub async fn indexer_sanity_check() -> Result<()> {
         .await?;
     print_json!(rewards);
 
-    let subaccount_summary = client.get_subaccount_summary([0; 32], None).await?;
-    print_json!(subaccount_summary);
+    let account_snapshots = client
+        .get_account_snapshots_builder()
+        .subaccounts(vec![[0; 32]])
+        .timestamps(vec![timestamp()])
+        .query()
+        .await?;
+    print_json!(account_snapshots);
 
     let linked_signer_rate_limit = client.get_linked_signer_rate_limit([0; 32]).await?;
     print_json!(linked_signer_rate_limit);

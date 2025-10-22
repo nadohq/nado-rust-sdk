@@ -92,17 +92,6 @@ pub enum Query {
         trigger_types: Option<Vec<crate::trigger::TriggerType>>,
     },
 
-    Summary {
-        #[serde(
-            deserialize_with = "deserialize_bytes32",
-            serialize_with = "serialize_bytes32"
-        )]
-        subaccount: [u8; 32],
-        timestamp: Option<TimestampOrTimestamps>,
-        #[serde(default)]
-        active: Option<bool>,
-    },
-
     AccountSnapshots {
         subaccounts: Vec<WrappedBytes32>,
         timestamps: Vec<WrappedU64>,
@@ -155,7 +144,7 @@ pub enum Query {
         product_ids: Option<Vec<WrappedU32>>,
     },
 
-    UsdcPrice {},
+    QuotePrice {},
 
     LinkedSignerRateLimit {
         #[serde(
@@ -370,12 +359,12 @@ pub struct NlpSnapshot {
         serialize_with = "serialize_i128",
         deserialize_with = "deserialize_i128"
     )]
-    pub cumulative_mint_usdc: i128,
+    pub cumulative_mint_quote: i128,
     #[serde(
         serialize_with = "serialize_i128",
         deserialize_with = "deserialize_i128"
     )]
-    pub cumulative_burn_usdc: i128,
+    pub cumulative_burn_quote: i128,
     #[serde(
         serialize_with = "serialize_i128",
         deserialize_with = "deserialize_i128"
@@ -567,7 +556,7 @@ pub struct Event {
         serialize_with = "serialize_i128",
         deserialize_with = "deserialize_i128"
     )]
-    pub cumulative_volume: i128,
+    pub quote_volume_cumulative: i128,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -951,18 +940,6 @@ pub struct InitialDropConditionsResponse {
     pub claimed: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub enum EventsOrTsToEvents {
-    Events(Vec<Event>),
-    TsToEvents(HashMap<WrappedU64, Vec<Event>>),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SummaryResponse {
-    pub events: EventsOrTsToEvents,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Match {
     #[serde(
@@ -1095,7 +1072,7 @@ pub struct OraclePriceResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct UsdcPriceResponse {
+pub struct QuotePriceResponse {
     #[serde(
         serialize_with = "serialize_i128",
         deserialize_with = "deserialize_i128"
@@ -1348,6 +1325,7 @@ pub struct TradesParams {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TickerResponse {
+    pub product_id: u32,
     pub ticker_id: String,
     pub base_currency: String,
     pub quote_currency: String,
@@ -1359,6 +1337,7 @@ pub struct TickerResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PerpContractResponse {
+    pub product_id: u32,
     pub ticker_id: String,
     pub base_currency: String,
     pub quote_currency: String,
@@ -1379,6 +1358,7 @@ pub struct PerpContractResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Trade {
+    pub product_id: u32,
     pub ticker_id: String,
     pub trade_id: u64,
     pub price: f64,

@@ -5,6 +5,7 @@ use eyre::{eyre, Result};
 use crate::bindings::endpoint;
 use crate::eip712_structs;
 use crate::engine::{PlaceOrder, PlaceOrderResponse};
+use crate::math::ONE_X12;
 use crate::trigger::{PlaceTriggerOrder, TriggerCriteria};
 use crate::tx::get_eip712_digest;
 use crate::utils::client_error::none_error;
@@ -144,7 +145,8 @@ nado_builder!(
         }
         if self.isolated.is_some() && self.isolated.unwrap() {
             appendix |= 1 << 8;
-            appendix |= (self.margin.unwrap() as u128) << 32;
+            let margin_x6 = self.margin.unwrap() / ONE_X12;
+            appendix |= (margin_x6 as u128) << 64;
         }
         appendix |= order_type.appendix_bit();
         let nonce = self.nonce.unwrap_or(order_nonce(self.recv_time));
@@ -197,4 +199,4 @@ fn random_digest() -> [u8; 32] {
     arr
 }
 
-const ORDER_VERSION: u8 = 0;
+const ORDER_VERSION: u8 = 1;

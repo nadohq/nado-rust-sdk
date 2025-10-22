@@ -12,10 +12,10 @@ use crate::indexer::{
     EventsResponse, FoundationTakerRewardsResponse, FundingRateResponse,
     InterestAndFundingTicksResponse, IsolatedSubaccountsResponse, LeaderboardResponse,
     LinkedSignerRateLimitResponse, LinkedSignerResponse, MakerStatisticsResponse,
-    MarketSnapshotsResponse, MatchesResponse, MerkleProofsResponse, OraclePriceResponse,
-    OrdersResponse, PerpContractResponse, PerpPriceResponse, ProductSnapshot, ProductsResponse,
-    Query, QueryV2, ReferralCodeResponse, RewardsResponse, SubaccountsResponse, SummaryResponse,
-    TickerResponse, TickersParams, TimestampOrTimestamps, TradesResponse, UsdcPriceResponse,
+    MarketSnapshotsResponse, MatchesResponse, MerkleProofsResponse, NlpSnapshotsResponse,
+    OraclePriceResponse, OrdersResponse, PerpContractResponse, PerpPriceResponse, ProductSnapshot,
+    ProductsResponse, Query, QueryV2, QuotePriceResponse, ReferralCodeResponse, RewardsResponse,
+    SubaccountsResponse, TickerResponse, TickersParams, TradesResponse,
 };
 use crate::indexer::{FastWithdrawalSignatureResponse, LiquidatableAccount};
 use crate::serialize_utils::{WrappedU32, WrappedU64};
@@ -88,19 +88,6 @@ pub trait NadoIndexer: NadoBase {
         self.query(orders_query).await
     }
 
-    async fn get_subaccount_summary(
-        &self,
-        subaccount: [u8; 32],
-        timestamp: Option<TimestampOrTimestamps>,
-    ) -> Result<SummaryResponse> {
-        let query = Query::Summary {
-            subaccount,
-            timestamp,
-            active: None,
-        };
-        self.query(query).await
-    }
-
     async fn get_matches(&self, matches_query: Query) -> Result<MatchesResponse> {
         self.query(matches_query).await
     }
@@ -128,8 +115,8 @@ pub trait NadoIndexer: NadoBase {
         self.query(query).await
     }
 
-    async fn get_usdc_price(&self) -> Result<UsdcPriceResponse> {
-        let query = Query::UsdcPrice {};
+    async fn get_quote_price(&self) -> Result<QuotePriceResponse> {
+        let query = Query::QuotePrice {};
         self.query(query).await
     }
 
@@ -179,6 +166,10 @@ pub trait NadoIndexer: NadoBase {
         market_snapshots_query: Query,
     ) -> Result<MarketSnapshotsResponse> {
         self.query(market_snapshots_query).await
+    }
+
+    async fn get_nlp_snapshots(&self, nlp_snapshots_query: Query) -> Result<NlpSnapshotsResponse> {
+        self.query(nlp_snapshots_query).await
     }
 
     async fn get_referral_code(&self, subaccount: [u8; 32]) -> Result<ReferralCodeResponse> {
