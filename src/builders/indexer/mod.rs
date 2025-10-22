@@ -9,6 +9,7 @@ pub mod maker_statistics;
 pub mod market_snapshots;
 pub mod matches;
 pub mod multi_product_snapshots;
+pub mod nlp_snapshots;
 pub mod product_snapshots;
 pub mod rewards;
 pub mod subaccounts;

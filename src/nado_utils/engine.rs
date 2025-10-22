@@ -178,6 +178,7 @@ pub enum Query {
         spot_leverage: Option<String>,
         reduce_only: Option<String>,
         isolated: Option<String>,
+        borrow_margin: Option<String>,
     },
 
     MaxWithdrawable {
@@ -1091,6 +1092,8 @@ pub struct NlpPool {
         deserialize_with = "deserialize_u128"
     )]
     pub balance_weight_x18: u128,
+    pub subaccount_info: SubaccountInfoResponse,
+    pub open_orders: Vec<OrderResponse>,
 }
 
 #[derive(
@@ -1544,6 +1547,7 @@ pub struct ExecuteResponse {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteResponseData {
     PlaceOrder(PlaceOrderResponse),
+    PlaceOrders(PlaceOrdersResponse),
     CancelOrders(CancelOrdersResponse),
     CancelProductOrders(CancelOrdersResponse),
 }
@@ -1567,6 +1571,21 @@ pub struct PlaceOrderResponse {
     )]
     pub digest: [u8; 32],
 }
+
+#[derive(
+    Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+pub struct PlaceOrdersItemResponse {
+    #[serde(
+        serialize_with = "serialize_option_bytes32",
+        deserialize_with = "deserialize_option_bytes32"
+    )]
+    pub digest: Option<[u8; 32]>,
+    pub error: Option<String>,
+}
+
+pub type PlaceOrdersResponse = Vec<PlaceOrdersItemResponse>;
 
 #[derive(
     Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
@@ -1638,6 +1657,7 @@ pub struct OrderbookPriceLevel(pub f64, pub f64);
 // #[ts(export)]
 // #[ts(export_to = "tsBindings/msgResponses/")]
 pub struct OrderbookResponse {
+    pub product_id: u32,
     pub ticker_id: String,
     pub bids: Vec<OrderbookPriceLevel>,
     pub asks: Vec<OrderbookPriceLevel>,
@@ -1660,6 +1680,7 @@ pub struct OrderbookResponse {
 // #[ts(export)]
 // #[ts(export_to = "tsBindings/msgResponses/")]
 pub struct MarketPair {
+    pub product_id: u32,
     pub ticker_id: String,
     pub base: String,
     pub quote: String,

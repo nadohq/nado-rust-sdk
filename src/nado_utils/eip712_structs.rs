@@ -235,14 +235,14 @@ impl Order {
 
     pub fn isolated_margin(&self) -> Option<i128> {
         if self.is_isolated() {
-            Some((self.appendix >> 32) as i128)
+            Some((self.appendix >> 64) as i128 * ONE_X18 / ONE_X6)
         } else {
             None
         }
     }
 
     pub fn reserved_bits(&self) -> u128 {
-        (self.appendix >> 14) & ((1 << 18) - 1)
+        (self.appendix >> 14) & ((1 << 50) - 1)
     }
 
     pub fn version(&self) -> u8 {
