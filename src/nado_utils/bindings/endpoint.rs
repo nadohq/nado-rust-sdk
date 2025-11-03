@@ -9,6 +9,9 @@ pub use endpoint::*;
     dead_code,
     non_camel_case_types
 )]
+#[allow(clippy::module_inception)]
+#[allow(clippy::useless_conversion)]
+#[allow(clippy::large_enum_variant)]
 pub mod endpoint {
     #[allow(deprecated)]
     fn __abi() -> ::ethers::core::abi::Abi {

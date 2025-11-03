@@ -31,7 +31,7 @@ async fn main() {
         .get_subaccount_orders(client.subaccount().unwrap(), BTC_PERP)
         .await
         .unwrap();
-    println!("open orders: {:?}", open_orders);
+    println!("open orders: {open_orders:?}");
 
     // cancel order
     let cancellation_response = client

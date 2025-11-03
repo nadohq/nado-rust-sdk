@@ -23,7 +23,7 @@ pub async fn deposit_collateral<V: NadoExecute + Sync>(
     if deposit_collateral_params.mints_tokens {
         nado.mint_mock_erc20(product_id, amount).await?;
         if let Some(sleep_secs) = deposit_collateral_params.erc20_sleep_secs {
-            println!("sleeping for {}s (erc20)", sleep_secs);
+            println!("sleeping for {sleep_secs}s (erc20)");
             tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
         }
     }
@@ -37,7 +37,7 @@ pub async fn deposit_collateral<V: NadoExecute + Sync>(
         )
         .await?;
         if let Some(sleep_secs) = deposit_collateral_params.erc20_sleep_secs {
-            println!("sleeping for {}s (erc20)", sleep_secs);
+            println!("sleeping for {sleep_secs}s (erc20)");
             tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
         }
     }

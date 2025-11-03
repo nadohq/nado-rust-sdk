@@ -22,7 +22,7 @@ impl<R: DeserializeOwned + Send> NadoRestResponse<R> {
             NadoRestResponse::Success(response) => Ok(response),
             NadoRestResponse::IndexerError(error) => Err(eyre!(error.error)),
             NadoRestResponse::IPBlocked(response) => {
-                Err(eyre!(ClientError::IPBlocked(format!("{:?}", response))))
+                Err(eyre!(ClientError::IPBlocked(format!("{response:?}"))))
             }
             NadoRestResponse::Unknown(value) => Ok(serde_json::from_value(value)?),
         }

@@ -19,7 +19,7 @@ impl ClientMode {
                 format!("http://gateway.{envtag}.nado.xyz:80/v1")
             }
             _ => {
-                format!("https://gateway.{envtag}.nado-backend.xyz/v1")
+                format!("https://gateway.{envtag}.nado.xyz/v1")
             }
         }
     }
@@ -31,7 +31,7 @@ impl ClientMode {
                 format!("http://trigger.{envtag}.nado.xyz:8080/v1")
             }
             _ => {
-                format!("https://trigger.{envtag}.nado-backend.xyz/v1")
+                format!("https://trigger.{envtag}.nado.xyz/v1")
             }
         }
     }
@@ -43,7 +43,7 @@ impl ClientMode {
                 format!("http://archive.{envtag}.nado.xyz:8000/v1")
             }
             _ => {
-                format!("https://archive.{envtag}.nado-backend.xyz/v1")
+                format!("https://archive.{envtag}.nado.xyz/v1")
             }
         }
     }
@@ -55,7 +55,7 @@ impl ClientMode {
                 format!("ws://gateway.{envtag}.nado.xyz:80/ws")
             }
             _ => {
-                format!("wss://gateway.{envtag}.nado-backend.xyz/ws")
+                format!("wss://gateway.{envtag}.nado.xyz/ws")
             }
         }
     }
@@ -110,7 +110,7 @@ impl ClientMode {
             "test" => Self::Test,
             "local" => Self::Local,
             "local-alt" => Self::LocalAlt,
-            _ => panic!("Unknown envtag: {}", envtag),
+            _ => panic!("Unknown envtag: {envtag}"),
         }
     }
 
@@ -125,10 +125,9 @@ impl ClientMode {
         let deployment_str = match std::env::var("NADO_CONFIGS_DIR") {
             Ok(path) => {
                 let deployment_path = Path::new(&path).join(&network).join("deployment.json");
-                fs::read_to_string(&deployment_path).expect(&format!(
-                    "Failed to read {}",
-                    &deployment_path.to_string_lossy()
-                ))
+                fs::read_to_string(&deployment_path).unwrap_or_else(|_| {
+                    panic!("Failed to read {}", &deployment_path.to_string_lossy())
+                })
             }
             Err(_) => {
                 let package_dir = env!("CARGO_MANIFEST_DIR");

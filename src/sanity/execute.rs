@@ -160,7 +160,7 @@ async fn place_orders(client: &NadoClient) {
         .unwrap();
 }
 
-fn orders_contain_digest(digest: [u8; 32], orders: &Vec<OrderResponse>) -> bool {
+fn orders_contain_digest(digest: [u8; 32], orders: &[OrderResponse]) -> bool {
     orders.iter().any(|order| order.digest == digest)
 }
 

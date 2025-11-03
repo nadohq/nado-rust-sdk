@@ -1,6 +1,6 @@
 use crate::core::indexer::NadoIndexer;
 use crate::utils::wrapped_option_utils::{
-    wrapped_option_bytes32, wrapped_option_u64, wrapped_option_vec_bytes32, wrapped_option_vec_u32,
+    wrapped_option_u64, wrapped_option_vec_bytes32, wrapped_option_vec_u32,
 };
 use crate::{build_and_call, nado_builder};
 use eyre::{eyre, Result};
@@ -13,7 +13,7 @@ use crate::trigger::TriggerType;
 nado_builder!(
     HistoricalOrdersBuilder,
     NadoIndexer,
-    subaccount: [u8; 32],
+    subaccounts: Vec<[u8; 32]>,
     product_ids: Vec<u32>,
     trigger_types: Vec<TriggerType>,
     max_time: u64,
@@ -30,7 +30,7 @@ nado_builder!(
         let trigger_types = self.trigger_types.clone();
 
         Ok(indexer::Query::Orders {
-            subaccount: wrapped_option_bytes32(self.subaccount),
+            subaccounts: wrapped_option_vec_bytes32(self.subaccounts.clone()),
             product_ids,
             digests: wrapped_option_vec_bytes32(self.digests.clone()),
             max_time: wrapped_option_u64(self.max_time),
@@ -42,9 +42,9 @@ nado_builder!(
     }
 
     fn validate_build_conditions(&self) -> Result<()> {
-        if self.subaccount.is_none() && self.digests.is_none() {
+        if self.subaccounts.is_none() && self.digests.is_none() {
             return Err(eyre!(
-                "historical orders: subaccount or digests must be set"
+                "historical orders: subaccounts or digests must be set"
             ));
         }
         Ok(())

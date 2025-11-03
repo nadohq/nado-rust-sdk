@@ -9,10 +9,10 @@ async fn main() {
     const ARB_PERP: u32 = 6;
     let depth = 10;
     let order_book = client.get_market_liquidity(ARB_PERP, depth).await.unwrap();
-    println!("orderbook: {:?}", order_book);
+    println!("orderbook: {order_book:?}");
 
     let liquidation_feed = client.get_liquidation_feed().await.unwrap();
-    print!("liquidateable accounts: {:?}", liquidation_feed);
+    print!("liquidateable accounts: {liquidation_feed:?}");
 
     // anything requiring a private key fails
     assert!(client.subaccount().is_err());
