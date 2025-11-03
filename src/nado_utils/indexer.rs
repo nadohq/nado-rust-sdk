@@ -71,7 +71,7 @@ pub enum Query {
     },
 
     Events {
-        subaccount: Option<WrappedBytes32>,
+        subaccounts: Option<Vec<WrappedBytes32>>,
         product_ids: Option<Vec<WrappedU32>>,
         event_types: Option<Vec<TxType>>,
         max_time: Option<WrappedU64>,
@@ -82,7 +82,7 @@ pub enum Query {
     },
 
     Orders {
-        subaccount: Option<WrappedBytes32>,
+        subaccounts: Option<Vec<WrappedBytes32>>,
         product_ids: Option<Vec<WrappedU32>>,
         digests: Option<Vec<WrappedBytes32>>,
         max_time: Option<WrappedU64>,
@@ -101,7 +101,7 @@ pub enum Query {
     },
 
     Matches {
-        subaccount: Option<WrappedBytes32>,
+        subaccounts: Option<Vec<WrappedBytes32>>,
         product_ids: Option<Vec<WrappedU32>>,
         max_time: Option<WrappedU64>,
         limit: Option<WrappedU32>,

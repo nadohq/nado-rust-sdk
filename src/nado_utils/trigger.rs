@@ -312,12 +312,25 @@ impl PlaceTriggerOrder {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct PlaceTriggerOrdersItemResponse {
+    pub digest: Option<[u8; 32]>,
+    pub error: Option<String>,
+}
+
+pub type PlaceTriggerOrdersResponse = Vec<PlaceTriggerOrdersItemResponse>;
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
 // #[ts(export)]·
 // #[ts(export_to = "tsBindings/msg/")]
 pub enum Execute {
     PlaceOrder(PlaceTriggerOrder),
+    PlaceOrders {
+        orders: Vec<PlaceTriggerOrder>,
+        cancel_on_failure: Option<bool>,
+    },
     CancelOrders {
         tx: Cancellation,
         signature: Bytes,

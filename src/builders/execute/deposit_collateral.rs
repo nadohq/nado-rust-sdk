@@ -68,7 +68,7 @@ nado_builder!(
         let mints_tokens = self.mints_tokens.unwrap_or(false);
         let approves_allowance = self.approves_allowance.unwrap_or(true);
         let subaccount = self.get_subaccount()?;
-        let referral_code = if let Some(_) = self.on_behalf_of {
+        let referral_code = if self.on_behalf_of.is_some() {
             Some("-1".to_string())
         } else {
             self.referral_code.clone()

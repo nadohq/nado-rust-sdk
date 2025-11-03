@@ -98,7 +98,7 @@ pub async fn indexer_sanity_check() -> Result<()> {
 
     let historical_orders = client
         .get_historical_orders_builder()
-        .subaccount([0; 32])
+        .subaccounts(vec![[0; 32]])
         .limit(20)
         .product_ids(vec![1, 4])
         .max_time(timestamp())
@@ -108,7 +108,7 @@ pub async fn indexer_sanity_check() -> Result<()> {
 
     let matches = client
         .get_matches_builder()
-        .subaccount([0; 32])
+        .subaccounts(vec![[0; 32]])
         .product_ids(vec![1, 2, 3])
         .limit(100)
         .max_time(timestamp())

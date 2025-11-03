@@ -16,7 +16,7 @@ where
 }
 
 pub fn validate_subaccount_name(name: &str) -> Result<()> {
-    let byte_len = name.as_bytes().len();
+    let byte_len = name.len();
     if byte_len > 12 {
         Err(eyre!(ClientError::SubaccountNameSize(byte_len)))
     } else {

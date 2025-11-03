@@ -31,7 +31,7 @@ pub struct HttpEnsemble {
 }
 
 impl HttpEnsemble {
-    pub fn new(node_urls: &Vec<String>) -> Result<Self> {
+    pub fn new(node_urls: &[String]) -> Result<Self> {
         let mut providers = vec![];
         for url in node_urls.iter() {
             providers.push(Http::from_str(url)?)
@@ -39,12 +39,12 @@ impl HttpEnsemble {
         Ok(HttpEnsemble { providers })
     }
 
-    pub fn new_provider(node_urls: &Vec<String>) -> Result<Provider<Self>> {
+    pub fn new_provider(node_urls: &[String]) -> Result<Provider<Self>> {
         let http_ensemble = Self::new(node_urls)?;
         Ok(Provider::new(http_ensemble))
     }
 
-    pub fn new_retry_provider(node_urls: &Vec<String>) -> Result<HttpEnsembleRetryProvider> {
+    pub fn new_retry_provider(node_urls: &[String]) -> Result<HttpEnsembleRetryProvider> {
         let http_ensemble = Self::new(node_urls)?;
         Ok(Provider::new(RetryClient::new(
             http_ensemble,
@@ -55,7 +55,7 @@ impl HttpEnsemble {
     }
 
     pub async fn new_nado_provider(
-        node_urls: &Vec<String>,
+        node_urls: &[String],
         private_key: String,
     ) -> Result<Arc<NadoEnsembleProvider>> {
         let provider = HttpEnsemble::new_retry_provider(node_urls)?;

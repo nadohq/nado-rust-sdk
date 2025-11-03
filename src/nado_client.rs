@@ -174,14 +174,14 @@ impl NadoExecute for NadoClient {
         if params.mints_fee {
             self.mint_mock_erc20(0, SLOW_MODE_FEE).await?;
             if let Some(sleep_secs) = params.erc20_sleep_secs {
-                println!("sleeping for {}s (erc20)", sleep_secs);
+                println!("sleeping for {sleep_secs}s (erc20)");
                 tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
             }
         }
         if params.approves_fee {
             self.approve_endpoint_allowance(0, SLOW_MODE_FEE).await?;
             if let Some(sleep_secs) = params.erc20_sleep_secs {
-                println!("sleeping for {}s (erc20)", sleep_secs);
+                println!("sleeping for {sleep_secs}s (erc20)");
                 tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
             }
         }

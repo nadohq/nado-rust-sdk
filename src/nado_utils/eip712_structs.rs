@@ -84,11 +84,7 @@ impl fmt::Display for OrderType {
 
 impl OrderType {
     pub fn taker_only(&self) -> bool {
-        match self {
-            OrderType::ImmediateOrCancel => true,
-            OrderType::FillOrKill => true,
-            _ => false,
-        }
+        matches!(self, OrderType::ImmediateOrCancel | OrderType::FillOrKill)
     }
 
     pub fn appendix_bit(&self) -> u128 {

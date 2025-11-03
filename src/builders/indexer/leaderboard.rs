@@ -22,8 +22,8 @@ nado_builder!(
         Ok(indexer::Query::Leaderboard {
             contest_id: WrappedU32(contest_id),
             rank_type,
-            start: self.start.map(|s| WrappedU64(s)),
-            limit: self.limit.map(|l| WrappedU64(l)),
+            start: self.start.map(WrappedU64),
+            limit: self.limit.map(WrappedU64),
         })
     }
 

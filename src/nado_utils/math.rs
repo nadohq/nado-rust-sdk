@@ -245,5 +245,19 @@ pub fn lp_value(balance: i128, x: i128, y: i128, supply: i128, price: i128) -> i
 }
 
 pub fn round(value: i128, increment: i128) -> i128 {
-    return value - value % increment;
+    value - value % increment
+}
+
+pub fn expo_to_x18(mut value: i128, expo: i32) -> i128 {
+    let shift = 18 + expo;
+    if shift >= 0 {
+        for _ in 0..shift {
+            value = value.saturating_mul(10);
+        }
+    } else {
+        for _ in 0..-shift {
+            value /= 10;
+        }
+    }
+    value
 }

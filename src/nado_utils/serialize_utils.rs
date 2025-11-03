@@ -378,7 +378,7 @@ where
         .map(|opt_wrapped: Option<WrappedVecU8>| opt_wrapped.map(|wrapped: WrappedVecU8| wrapped.0))
 }
 
-pub fn serialize_vec_u8<S>(value: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_vec_u8<S>(value: &[u8], serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

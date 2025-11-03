@@ -26,6 +26,7 @@ pub enum Product {
         decimals: u8,
         price_asset_id: String,
         min_size: f64,
+        feed: Option<String>,
         feed_id: Option<String>,
         withdraw_fee: f64,
         min_deposit_rate: f64,
@@ -48,6 +49,7 @@ pub enum Product {
         min_size: f64,
         // 0 for no limit
         max_open_interest: Option<f64>,
+        feed: Option<String>,
         feed_id: Option<String>,
     },
 }
@@ -146,6 +148,13 @@ impl Product {
         }
     }
 
+    pub fn feed(&self) -> Option<String> {
+        match self {
+            Product::Spot { feed, .. } => feed.clone(),
+            Product::Perp { feed, .. } => feed.clone(),
+        }
+    }
+
     pub fn asset_id(&self) -> String {
         match self {
             Product::Spot { price_asset_id, .. } => price_asset_id.clone(),
@@ -157,7 +166,7 @@ impl Product {
         match self {
             Product::Perp {
                 max_open_interest, ..
-            } => max_open_interest.clone(),
+            } => *max_open_interest,
             _ => None,
         }
     }
