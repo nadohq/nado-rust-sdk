@@ -329,7 +329,7 @@ pub enum Execute {
     PlaceOrder(PlaceTriggerOrder),
     PlaceOrders {
         orders: Vec<PlaceTriggerOrder>,
-        cancel_on_failure: Option<bool>,
+        stop_on_failure: Option<bool>,
     },
     CancelOrders {
         tx: Cancellation,
