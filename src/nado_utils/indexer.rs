@@ -109,18 +109,6 @@ pub enum Query {
         isolated: Option<bool>,
     },
 
-    Rewards {
-        address: H160,
-        start: Option<WrappedU32>,
-        limit: Option<WrappedU32>,
-    },
-
-    MakerStatistics {
-        epoch: WrappedU32,
-        product_id: WrappedU32,
-        interval: WrappedU64,
-    },
-
     Subaccounts {
         address: Option<H160>,
         start: Option<WrappedU64>,
@@ -181,14 +169,6 @@ pub enum Query {
         limit: Option<WrappedU32>,
     },
 
-    ReferralCode {
-        #[serde(
-            deserialize_with = "deserialize_bytes32",
-            serialize_with = "serialize_bytes32"
-        )]
-        subaccount: [u8; 32],
-    },
-
     InterestAndFunding {
         #[serde(
             deserialize_with = "deserialize_bytes32",
@@ -201,38 +181,14 @@ pub enum Query {
         limit: WrappedU32,
     },
 
-    VrtxMerkleProofs {
-        address: H160,
-    },
-
-    // TODO: remove this after FE uses the new one.
-    ArbMerkleProofs {
-        address: H160,
-    },
-
-    // TODO: remove this after FE uses the new one.
-    ArbRewards {
-        address: H160,
-    },
-
-    FoundationRewardsMerkleProofs {
-        address: H160,
-    },
-
-    FoundationTakerRewards {
-        address: H160,
-        start: Option<WrappedU32>,
-        limit: Option<WrappedU32>,
+    NlpFundingPayments {
+        max_idx: Option<WrappedU64>,
+        max_time: Option<WrappedU64>,
+        limit: WrappedU32,
     },
 
     Signatures {
         digests: Vec<WrappedBytes32>,
-    },
-
-    TakerRewards {
-        address: H160,
-        start: Option<WrappedU32>,
-        limit: Option<WrappedU32>,
     },
 
     Leaderboard {
@@ -269,34 +225,10 @@ pub enum Query {
         idx: WrappedU64,
     },
 
-    ActiveUsers {
-        start_time: WrappedU64,
-        end_time: WrappedU64,
-        api_key: String,
-    },
-
     Ratelimit {
         ip: Option<String>,
         wallet: Option<String>,
         api_key: String,
-    },
-
-    StakingV2ModifyStake {},
-
-    StakingV2PoolSnapshots {
-        interval: Interval,
-    },
-
-    StakingV2TopStakers {
-        limit: Option<u32>,
-    },
-
-    FoundationTokenIncentivesSnapshots {
-        interval: Interval,
-    },
-
-    VrtxSupplySnapshots {
-        interval: Interval,
     },
 
     NlpSnapshots {
@@ -386,81 +318,6 @@ pub struct NlpSnapshot {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NlpSnapshotsResponse {
     pub snapshots: Vec<NlpSnapshot>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct VrtxSupplySnapshot {
-    pub timestamp: u64,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub vrtx_oracle_price: i128,
-    pub cumulative_incentives: f64,
-    pub cumulative_lba: f64,
-    pub cumulative_ecosystem_supply: f64,
-    pub cumulative_treasury_supply: f64,
-    pub cumulative_investors_supply: f64,
-    pub cumulative_team_supply: f64,
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct VrtxSupplySnapshotsResponse {
-    pub snapshots: Vec<VrtxSupplySnapshot>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct FoundationTokenIncentivesSnapshot {
-    pub timestamp: u64,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub cumulative_foundation_token_incentives: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub foundation_token_oracle_price: i128,
-    pub foundation_token_product_id: u32,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct FoundationTokenIncentivesSnapshotsResponse {
-    pub snapshots: HashMap<u64, Vec<FoundationTokenIncentivesSnapshot>>,
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct StakingV2PoolSnapshot {
-    pub timestamp: u64,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub cumulative_staked: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub cumulative_unstaked: i128,
-    pub number_of_stakers: i32,
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct StakingV2PoolSnapshotsResponse {
-    pub snapshots: Vec<StakingV2PoolSnapshot>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Staker {
-    pub address: H160,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub stake_amount: i128,
-    pub pool_share: f64,
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct StakingV2TopTradersResponse {
-    pub stakers: Vec<Staker>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1254,12 +1111,7 @@ pub struct MarketActivityResponse {
     pub markets: Vec<ProductMarketActivity>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ReferralCodeResponse {
-    pub referral_code: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Payment {
     pub product_id: u32,
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
@@ -1293,6 +1145,12 @@ pub struct Payment {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InterestAndFundingTicksResponse {
     pub interest_payments: Vec<Payment>,
+    pub funding_payments: Vec<Payment>,
+    pub next_idx: Option<WrappedU64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NlpFundingPaymentsResponse {
     pub funding_payments: Vec<Payment>,
     pub next_idx: Option<WrappedU64>,
 }
@@ -1374,11 +1232,6 @@ pub type TradesResponse = Vec<Trade>;
 pub struct MerkleProof {
     pub total_amount: String,
     pub proof: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct MerkleProofsResponse {
-    pub merkle_proofs: Vec<MerkleProof>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -23,13 +23,6 @@ pub async fn indexer_sanity_check() -> Result<()> {
     let oracle_price = client.get_oracle_price(vec![1, 2]).await?;
     print_json!(oracle_price);
 
-    let rewards = client
-        .get_rewards_builder()
-        .address([0; 20])
-        .query()
-        .await?;
-    print_json!(rewards);
-
     let account_snapshots = client
         .get_account_snapshots_builder()
         .subaccounts(vec![[0; 32]])
@@ -43,9 +36,6 @@ pub async fn indexer_sanity_check() -> Result<()> {
 
     let linked_signers = client.get_linked_signers(Some(100), Some(10)).await?;
     print_json!(linked_signers);
-
-    let referral_code = client.get_referral_code([0; 32]).await?;
-    print_json!(referral_code);
 
     let perp_prices = client.get_perp_prices(vec![2]).await?;
     print_json!(perp_prices);
@@ -116,17 +106,6 @@ pub async fn indexer_sanity_check() -> Result<()> {
         .query()
         .await?;
     print_json!(matches);
-
-    if client.client_mode != ClientMode::Local {
-        let maker_statistics = client
-            .get_maker_statistics_builder()
-            .epoch(0)
-            .product_id(1)
-            .interval(3600)
-            .query()
-            .await?;
-        print_json!(maker_statistics);
-    }
 
     let subaccounts = client
         .get_subaccounts_builder()

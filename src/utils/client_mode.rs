@@ -7,6 +7,7 @@ pub static CONFIGS: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/nado_utils/confi
 #[derive(Clone, PartialEq)]
 pub enum ClientMode {
     Test,
+    Prod,
     Local,
     LocalAlt,
 }
@@ -99,6 +100,7 @@ impl ClientMode {
     pub fn nado_envtag(&self) -> String {
         match self {
             Self::Test => "test",
+            Self::Prod => "prod",
             Self::Local => "local",
             Self::LocalAlt => "local-alt",
         }
@@ -108,6 +110,7 @@ impl ClientMode {
     pub fn from_envtag(envtag: &str) -> Self {
         match envtag {
             "test" => Self::Test,
+            "prod" => Self::Prod,
             "local" => Self::Local,
             "local-alt" => Self::LocalAlt,
             _ => panic!("Unknown envtag: {envtag}"),

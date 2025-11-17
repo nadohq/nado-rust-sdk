@@ -1,21 +1,19 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use ethers::prelude::H160;
 use eyre::Result;
 use serde::de::DeserializeOwned;
 
 use crate::core::base::NadoBase;
 use crate::indexer::Query::FastWithdrawalSignature;
 use crate::indexer::{
-    AccountSnapshotsResponse, ArbRewardsResponse, CandlesticksResponse, ContractsParams,
-    EventsResponse, FoundationTakerRewardsResponse, FundingRateResponse,
-    InterestAndFundingTicksResponse, IsolatedSubaccountsResponse, LeaderboardResponse,
-    LinkedSignerRateLimitResponse, LinkedSignerResponse, MakerStatisticsResponse,
-    MarketSnapshotsResponse, MatchesResponse, MerkleProofsResponse, NlpSnapshotsResponse,
-    OraclePriceResponse, OrdersResponse, PerpContractResponse, PerpPriceResponse, ProductSnapshot,
-    ProductsResponse, Query, QueryV2, QuotePriceResponse, ReferralCodeResponse, RewardsResponse,
-    SubaccountsResponse, TickerResponse, TickersParams, TradesResponse,
+    AccountSnapshotsResponse, CandlesticksResponse, ContractsParams, EventsResponse,
+    FoundationTakerRewardsResponse, FundingRateResponse, InterestAndFundingTicksResponse,
+    IsolatedSubaccountsResponse, LeaderboardResponse, LinkedSignerRateLimitResponse,
+    LinkedSignerResponse, MakerStatisticsResponse, MarketSnapshotsResponse, MatchesResponse,
+    NlpFundingPaymentsResponse, NlpSnapshotsResponse, OraclePriceResponse, OrdersResponse,
+    PerpContractResponse, PerpPriceResponse, ProductSnapshot, ProductsResponse, Query, QueryV2,
+    QuotePriceResponse, SubaccountsResponse, TickerResponse, TickersParams, TradesResponse,
 };
 use crate::indexer::{FastWithdrawalSignatureResponse, LiquidatableAccount};
 use crate::serialize_utils::{WrappedU32, WrappedU64};
@@ -90,10 +88,6 @@ pub trait NadoIndexer: NadoBase {
 
     async fn get_matches(&self, matches_query: Query) -> Result<MatchesResponse> {
         self.query(matches_query).await
-    }
-
-    async fn get_rewards(&self, query: Query) -> Result<RewardsResponse> {
-        self.query(query).await
     }
 
     async fn get_subaccounts(&self, subaccounts_query: Query) -> Result<SubaccountsResponse> {
@@ -172,11 +166,6 @@ pub trait NadoIndexer: NadoBase {
         self.query(nlp_snapshots_query).await
     }
 
-    async fn get_referral_code(&self, subaccount: [u8; 32]) -> Result<ReferralCodeResponse> {
-        let query = Query::ReferralCode { subaccount };
-        self.query(query).await
-    }
-
     async fn get_interest_and_funding(
         &self,
         interest_and_funding_query: Query,
@@ -184,19 +173,11 @@ pub trait NadoIndexer: NadoBase {
         self.query(interest_and_funding_query).await
     }
 
-    async fn get_vrtx_merkle_proofs(&self, address: H160) -> Result<MerkleProofsResponse> {
-        let query = Query::VrtxMerkleProofs { address };
-        self.query(query).await
-    }
-
-    async fn get_arb_merkle_proofs(&self, address: H160) -> Result<MerkleProofsResponse> {
-        let query = Query::ArbMerkleProofs { address };
-        self.query(query).await
-    }
-
-    async fn get_arb_rewards(&self, address: H160) -> Result<ArbRewardsResponse> {
-        let query = Query::ArbRewards { address };
-        self.query(query).await
+    async fn get_nlp_funding_payments(
+        &self,
+        nlp_funding_payment_query: Query,
+    ) -> Result<NlpFundingPaymentsResponse> {
+        self.query(nlp_funding_payment_query).await
     }
 
     async fn get_tickers(
