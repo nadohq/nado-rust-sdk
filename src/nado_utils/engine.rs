@@ -1187,16 +1187,6 @@ pub struct SymbolsResponseData {
         serialize_with = "serialize_i128",
         deserialize_with = "deserialize_i128"
     )]
-    pub min_depth_x18: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub max_spread_rate_x18: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
     pub maker_fee_rate_x18: i128,
     #[serde(
         serialize_with = "serialize_i128",

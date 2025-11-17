@@ -244,8 +244,27 @@ pub fn lp_value(balance: i128, x: i128, y: i128, supply: i128, price: i128) -> i
     }
 }
 
-pub fn round(value: i128, increment: i128) -> i128 {
+pub fn trunc(value: i128, increment: i128) -> i128 {
     value - value % increment
+}
+
+const ROUND_INCREMENT: i128 = 100_000_000;
+const ROUND_THRESHOLD: i128 = 1_000_000;
+pub fn spot_round(mut value: i128) -> i128 {
+    let negative = value < 0;
+    if negative {
+        value = -value;
+    }
+    let m = value % ROUND_INCREMENT;
+    if m < ROUND_THRESHOLD {
+        value -= m;
+    } else if m > ROUND_INCREMENT - ROUND_THRESHOLD {
+        value += ROUND_INCREMENT - m;
+    }
+    if negative {
+        value = -value;
+    }
+    value
 }
 
 pub fn expo_to_x18(mut value: i128, expo: i32) -> i128 {
