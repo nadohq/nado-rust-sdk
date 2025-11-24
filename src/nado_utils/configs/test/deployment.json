@@ -11,6 +11,7 @@
     "offchainExchange": "0x1e38180CFa9100b653c1Ea73B1B8175Aca1a45d0",
     "foundationRewardsAirdrop": "0x0000000000000000000000000000000000000000",
     "verifier": "0x634965466504abF2F2491846194ed2af3D27800e",
+    "contractOwner": "0x35164cA1b64905B884634c3271E5d1eFEb640dFA",
     "withdrawPool": "0xBD672Fe513acbA5c1ceE7b02F998A1B542852b3b",
     "wrappedNative": "0x5Ebb77b8C8e1E44592eDd0e6702d321527DC5EBA"
 }
