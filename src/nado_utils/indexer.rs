@@ -855,6 +855,7 @@ pub struct Match {
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub submission_idx: u64,
     pub isolated: bool,
+    pub is_taker: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
