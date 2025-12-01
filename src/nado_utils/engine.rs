@@ -91,6 +91,7 @@ pub enum Query {
         )]
         subaccount: [u8; 32],
         txns: Option<String>,
+        pre_state: Option<String>,
     },
 
     AllProducts {},
@@ -532,16 +533,40 @@ pub struct EdgeAllProductsResponse {
 }
 
 #[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
     Clone,
     Debug,
     Default,
     Eq,
     PartialEq,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+pub struct PreState {
+    pub healths: ::std::vec::Vec<HealthInfo>,
+    #[serde(
+        serialize_with = "serialize_nested_vec_i128",
+        deserialize_with = "deserialize_nested_vec_i128"
+    )]
+    pub health_contributions: Vec<Vec<i128>>,
+    pub spot_balances: ::std::vec::Vec<SpotBalance>,
+    pub perp_balances: ::std::vec::Vec<PerpBalance>,
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
 )]
 #[archive(check_bytes)]
 pub struct SubaccountInfoResponse {
@@ -563,6 +588,8 @@ pub struct SubaccountInfoResponse {
     pub perp_balances: ::std::vec::Vec<PerpBalance>,
     pub spot_products: ::std::vec::Vec<SpotProduct>,
     pub perp_products: ::std::vec::Vec<PerpProduct>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pre_state: Option<PreState>,
 }
 
 impl From<SubaccountInfo> for SubaccountInfoResponse {
@@ -582,7 +609,19 @@ impl From<SubaccountInfo> for SubaccountInfoResponse {
                 .map(SpotProduct::from)
                 .collect(),
             perp_products: subaccount_info.perp_products,
+            pre_state: None,
         }
+    }
+}
+
+impl SubaccountInfoResponse {
+    pub fn from_with_pre_state(
+        subaccount_info: SubaccountInfo,
+        pre_state: Option<PreState>,
+    ) -> Self {
+        let mut resp = SubaccountInfoResponse::from(subaccount_info);
+        resp.pre_state = pre_state;
+        resp
     }
 }
 
@@ -1582,6 +1621,7 @@ pub type PlaceOrdersResponse = Vec<PlaceOrdersItemResponse>;
 )]
 #[serde(untagged)]
 #[archive(check_bytes)]
+#[allow(clippy::large_enum_variant)]
 pub enum EngineResponse {
     Query(QueryResponse),
     Execute(ExecuteResponse),

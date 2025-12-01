@@ -67,7 +67,11 @@ pub trait NadoQuery: NadoBase + Sync {
             Some(serde_json::to_string(&txns)?)
         };
         let query_response = self
-            .query(Query::SubaccountInfo { subaccount, txns })
+            .query(Query::SubaccountInfo {
+                subaccount,
+                txns,
+                pre_state: None,
+            })
             .await?;
         map_response!(query_response, QueryResponseData::SubaccountInfo)
     }
