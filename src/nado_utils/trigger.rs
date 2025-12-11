@@ -387,6 +387,7 @@ impl ListTriggerOrdersResponse {
 #[serde(rename_all = "snake_case")]
 pub enum TwapExecutionStatusData {
     Pending,
+    Executing,
     Executed {
         executed_time: i64,
         execute_response: ExecuteResponse,

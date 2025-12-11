@@ -187,6 +187,12 @@ pub enum Query {
         limit: WrappedU32,
     },
 
+    NlpInterestPayments {
+        max_idx: Option<WrappedU64>,
+        max_time: Option<WrappedU64>,
+        limit: WrappedU32,
+    },
+
     Signatures {
         digests: Vec<WrappedBytes32>,
     },
@@ -1143,7 +1149,7 @@ pub struct Payment {
     pub isolated_product_id: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InterestAndFundingTicksResponse {
     pub interest_payments: Vec<Payment>,
     pub funding_payments: Vec<Payment>,
@@ -1153,6 +1159,12 @@ pub struct InterestAndFundingTicksResponse {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NlpFundingPaymentsResponse {
     pub funding_payments: Vec<Payment>,
+    pub next_idx: Option<WrappedU64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NlpInterestPaymentsResponse {
+    pub interest_payments: Vec<Payment>,
     pub next_idx: Option<WrappedU64>,
 }
 

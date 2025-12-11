@@ -11,9 +11,10 @@ use crate::indexer::{
     FoundationTakerRewardsResponse, FundingRateResponse, InterestAndFundingTicksResponse,
     IsolatedSubaccountsResponse, LeaderboardResponse, LinkedSignerRateLimitResponse,
     LinkedSignerResponse, MakerStatisticsResponse, MarketSnapshotsResponse, MatchesResponse,
-    NlpFundingPaymentsResponse, NlpSnapshotsResponse, OraclePriceResponse, OrdersResponse,
-    PerpContractResponse, PerpPriceResponse, ProductSnapshot, ProductsResponse, Query, QueryV2,
-    QuotePriceResponse, SubaccountsResponse, TickerResponse, TickersParams, TradesResponse,
+    NlpFundingPaymentsResponse, NlpInterestPaymentsResponse, NlpSnapshotsResponse,
+    OraclePriceResponse, OrdersResponse, PerpContractResponse, PerpPriceResponse, ProductSnapshot,
+    ProductsResponse, Query, QueryV2, QuotePriceResponse, SubaccountsResponse, TickerResponse,
+    TickersParams, TradesResponse,
 };
 use crate::indexer::{FastWithdrawalSignatureResponse, LiquidatableAccount};
 use crate::serialize_utils::{WrappedU32, WrappedU64};
@@ -178,6 +179,13 @@ pub trait NadoIndexer: NadoBase {
         nlp_funding_payment_query: Query,
     ) -> Result<NlpFundingPaymentsResponse> {
         self.query(nlp_funding_payment_query).await
+    }
+
+    async fn get_nlp_interest_payments(
+        &self,
+        nlp_interest_payment_query: Query,
+    ) -> Result<NlpInterestPaymentsResponse> {
+        self.query(nlp_interest_payment_query).await
     }
 
     async fn get_tickers(
