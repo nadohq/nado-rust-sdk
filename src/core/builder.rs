@@ -20,6 +20,7 @@ use crate::builders::indexer::market_snapshots::MarketSnapshotsBuilder;
 use crate::builders::indexer::matches::MatchesBuilder;
 use crate::builders::indexer::multi_product_snapshots::MultiProductSnapshotsBuilder;
 use crate::builders::indexer::nlp_funding_payment::NlpFundingPaymentsBuilder;
+use crate::builders::indexer::nlp_interest_payment::NlpInterestPaymentsBuilder;
 use crate::builders::indexer::nlp_snapshots::NlpSnapshotsBuilder;
 use crate::builders::indexer::product_snapshots::ProductSnapshotsBuilder;
 use crate::builders::indexer::subaccounts::SubaccountsBuilder;
@@ -91,6 +92,10 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
         InterestAndFundingTicksBuilder
     );
     get_nado_builder!(get_nlp_funding_payments_builder, NlpFundingPaymentsBuilder);
+    get_nado_builder!(
+        get_nlp_interest_payments_builder,
+        NlpInterestPaymentsBuilder
+    );
     get_nado_builder!(get_market_snapshots_builder, MarketSnapshotsBuilder);
     get_nado_builder!(get_nlp_snapshots_builder, NlpSnapshotsBuilder);
     get_nado_builder!(get_trades_builder, TradesParamsBuilder);
