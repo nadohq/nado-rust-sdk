@@ -2,9 +2,9 @@
 
 [![Crates.io][crates-img]][crates-url]
 
-This is the Rust SDK for the [Nado Protocol API](TODO).
+This is the Rust SDK for the [Nado Protocol API](https://docs.nado.xyz/developer-resources/api/).
 
-[Documentation](TODO)
+[Documentation](https://docs.rs/nado-sdk)
 
 ## Quickstart
 
@@ -65,7 +65,7 @@ nado_sdk = "0.3.0"
 
 ## Usage
 
-See the [examples](https://github.com/nado-protocol/nado-rust-sdk/tree/main/examples) and [sanity](https://github.com/nado-protocol/nado-rust-sdk/tree/main/src/sanity) directories.
+See the [examples](https://github.com/nadohq/nado-rust-sdk/tree/main/examples) and [sanity](https://github.com/nadohq/nado-rust-sdk/tree/main/src/sanity) directories.
 
 ## Running locally
 
