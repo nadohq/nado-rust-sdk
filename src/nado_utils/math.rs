@@ -122,6 +122,27 @@ pub fn to_i32_fp(x: f64) -> i32 {
     (x * 10.0_f64.powi(9)) as i32
 }
 
+pub fn x18_to_x9(x: i128) -> i32 {
+    (x / 1_000_000_000) as i32
+}
+
+pub fn str_to_x18(s: &str) -> i128 {
+    let parts: Vec<&str> = s.split('.').collect();
+    let whole = parts[0].parse::<i128>().unwrap_or(0);
+    let frac = if parts.len() > 1 {
+        let frac_part = parts[1];
+        let frac_str = if frac_part.len() <= 18 {
+            format!("{frac_part:0<18}")
+        } else {
+            frac_part[..18].to_string()
+        };
+        frac_str.parse::<i128>().unwrap_or(0)
+    } else {
+        0
+    };
+    whole * ONE_X18 + frac
+}
+
 pub fn to_u128_x6(x: u128) -> u128 {
     x * 1000000
 }
