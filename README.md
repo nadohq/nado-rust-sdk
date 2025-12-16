@@ -75,5 +75,22 @@ See the [examples](https://github.com/nadohq/nado-rust-sdk/tree/main/examples) a
 - `cargo run -- --query-sanity`: runs sanity checks for engine queries.
 - `cargo run -- --indexer-sanity`: runs sanity checks for indexer queries.
 
+### Websocket place order example
+
+`cargo run --example place_order_websocket` requires a `.env` file in the repo root with your signer key:
+
+```
+RUST_SDK_PRIVATE_KEY=<your_private_key_hex>
+# optional: NETWORK=test|prod (defaults to test)
+```
+
+Use `.env.example` as a template: copy it to `.env` and fill in the variables above.
+
+Then run the example:
+
+```
+cargo run --example place_order_websocket
+```
+
 [crates-img]: https://img.shields.io/crates/v/nado-sdk
 [crates-url]: https://crates.io/crates/nado-sdk

@@ -8,7 +8,6 @@ use crate::eip712_structs::{
     BurnNlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintNlp, Order,
     TransferQuote, WithdrawCollateral,
 };
-use crate::math::f64_to_x18;
 use crate::product::Product;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_nested_vec_i128,
@@ -1262,42 +1261,42 @@ impl From<&Product> for SymbolsResponseData {
         }
         .to_string();
         let max_open_interest = product.max_open_interest().and_then(|oi| {
-            if oi == 0.0 {
+            if oi == 0 {
                 None
             } else {
-                Some(WrappedI128(f64_to_x18(oi)))
+                Some(WrappedI128(oi))
             }
         });
 
         match product {
             Product::Spot {
                 symbol,
-                long_weight_initial,
-                long_weight_maintenance,
-                size_increment,
-                price_increment,
-                min_size,
+                long_weight_initial_x18,
+                long_weight_maintenance_x18,
+                size_increment_x18,
+                price_increment_x18,
+                min_size_x18,
                 product_id,
                 ..
             }
             | Product::Perp {
                 symbol,
-                long_weight_initial,
-                long_weight_maintenance,
-                size_increment,
-                price_increment,
-                min_size,
+                long_weight_initial_x18,
+                long_weight_maintenance_x18,
+                size_increment_x18,
+                price_increment_x18,
+                min_size_x18,
                 product_id,
                 ..
             } => SymbolsResponseData {
                 product_type,
                 product_id: *product_id,
                 symbol: symbol.clone(),
-                price_increment_x18: f64_to_x18(*price_increment),
-                min_size: f64_to_x18(*min_size),
-                size_increment: f64_to_x18(*size_increment),
-                long_weight_initial_x18: f64_to_x18(*long_weight_initial),
-                long_weight_maintenance_x18: f64_to_x18(*long_weight_maintenance),
+                price_increment_x18: *price_increment_x18,
+                min_size: *min_size_x18,
+                size_increment: *size_increment_x18,
+                long_weight_initial_x18: *long_weight_initial_x18,
+                long_weight_maintenance_x18: *long_weight_maintenance_x18,
                 max_open_interest_x18: max_open_interest,
                 ..Self::default()
             },
