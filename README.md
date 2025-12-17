@@ -60,7 +60,7 @@ Add the following line to your Cargo.toml file:
 
 ```toml
 [dependencies]
-nado_sdk = "0.3.1"
+nado_sdk = "0.3.3"
 ```
 
 ## Usage
@@ -89,7 +89,7 @@ Use `.env.example` as a template: copy it to `.env` and fill in the variables ab
 Then run the example:
 
 ```
-cargo run --example place_order_websocket
+cargo run --example place_order_websocket --features ws
 ```
 
 [crates-img]: https://img.shields.io/crates/v/nado-sdk

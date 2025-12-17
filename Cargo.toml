@@ -1,12 +1,16 @@
 [package]
 name = "nado-sdk"
-version = "0.3.2"
+version = "0.3.3"
 description = "Official Rust SDK for the Nado Protocol API"
 readme = "README.md"
 repository = "https://github.com/nadohq/nado-rust-sdk"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+ws = ["futures-util", "tokio-tungstenite", "rustls"]
 
 [dependencies]
 async-trait = "=0.1.88"
@@ -20,7 +24,7 @@ ethers-middleware = "=2.0.14"
 ethers-providers = "=2.0.14"
 ethers-signers = "=2.0.14"
 eyre = "=0.6.12"
-futures-util = "=0.3.31"
+futures-util = { version = "=0.3.31", optional = true }
 hex = "=0.4.3"
 home = "=0.5.9"
 idna = "=0.5.0"
@@ -28,7 +32,7 @@ include_dir = "=0.7.4"
 rand = "=0.8.5"
 reqwest = { version = "=0.11.27", features = ["json", "brotli"] }
 rkyv = { version = "=0.7.45", features = ["validation"] }
-rustls = { version = "=0.23.31", features = ["ring"] }
+rustls = { version = "=0.23.31", features = ["ring"], optional = true }
 
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_json = "=1.0.142"
@@ -36,7 +40,7 @@ serde_url_params = "=0.2.1"
 thiserror = "=1.0.69"
 time = "=0.3.36"
 tokio = { version = "=1.47.1", features = ["full"] }
-tokio-tungstenite = { version = "=0.23.1", features = ["rustls-tls-webpki-roots"] }
+tokio-tungstenite = { version = "=0.23.1", features = ["rustls-tls-webpki-roots"], optional = true }
 
 [[example]]
 name = "basic_usage"
@@ -69,3 +73,4 @@ path = "examples/product_ids_and_symbols.rs"
 [[example]]
 name = "place_order_websocket"
 path = "examples/place_order_websocket.rs"
+required-features = ["ws"]
