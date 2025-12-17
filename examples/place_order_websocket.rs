@@ -2,7 +2,7 @@
 // This example shows direct websocket communication while leveraging the SDK's
 // PlaceOrderBuilder to construct and sign orders.
 //
-// Run with: cargo run --example place_order_websocket
+// Run with: cargo run --example place_order_websocket --features ws
 //
 // Required environment variables:
 // - RUST_SDK_PRIVATE_KEY: Your wallet private key (set in .env file)
