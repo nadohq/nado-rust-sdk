@@ -47,6 +47,8 @@ pub enum TxType {
     DeleteNlpPool = 27,
     AssertProduct = 28,
     CloseIsolatedSubaccount = 29,
+    UpdateBuilder = 30,
+    ClaimBuilderFee = 31,
 }
 
 impl TxType {
@@ -82,6 +84,8 @@ impl TxType {
             27 => Self::DeleteNlpPool,
             28 => Self::AssertProduct,
             29 => Self::CloseIsolatedSubaccount,
+            30 => Self::UpdateBuilder,
+            31 => Self::ClaimBuilderFee,
             _ => panic!("Invalid TxType"),
         }
     }
@@ -139,11 +143,14 @@ pub enum NadoTx {
     MintNlp(endpoint::MintNlp),
     BurnNlp(endpoint::BurnNlp),
     UpdateTierFeeRates(endpoint::UpdateTierFeeRates),
+    UpdateFeeTier(endpoint::UpdateFeeTier),
     AddNlpPool(endpoint::AddNlpPool),
     UpdateNlpPool(endpoint::UpdateNlpPool),
     DeleteNlpPool(endpoint::DeleteNlpPool),
     AssertProduct(endpoint::AssertProduct),
     CloseIsolatedSubaccount(endpoint::CloseIsolatedSubaccount),
+    UpdateBuilder(endpoint::UpdateBuilder),
+    ClaimBuilderFee(endpoint::ClaimBuilderFee),
     Other,
 }
 
@@ -172,11 +179,14 @@ impl NadoTx {
             NadoTx::MintNlp(_) => TxType::MintNlp,
             NadoTx::BurnNlp(_) => TxType::BurnNlp,
             NadoTx::UpdateTierFeeRates(_) => TxType::UpdateTierFeeRates,
+            NadoTx::UpdateFeeTier(_) => TxType::UpdateFeeTier,
             NadoTx::AddNlpPool(_) => TxType::AddNlpPool,
             NadoTx::UpdateNlpPool(_) => TxType::UpdateNlpPool,
             NadoTx::DeleteNlpPool(_) => TxType::DeleteNlpPool,
             NadoTx::AssertProduct(_) => TxType::AssertProduct,
             NadoTx::CloseIsolatedSubaccount(_) => TxType::CloseIsolatedSubaccount,
+            NadoTx::UpdateBuilder(_) => TxType::UpdateBuilder,
+            NadoTx::ClaimBuilderFee(_) => TxType::ClaimBuilderFee,
             NadoTx::Other => panic!("Other is not a valid tx type"),
         }
     }

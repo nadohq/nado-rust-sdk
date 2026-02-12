@@ -237,8 +237,14 @@ impl Order {
         }
     }
 
+    pub fn builder_info(&self) -> (u32, i128) {
+        let builder_id = ((self.appendix >> 48) & ((1 << 16) - 1)) as u32;
+        let builder_fee_rate =
+            ((self.appendix >> 38) & ((1 << 10) - 1)) as i128 * (ONE_X18 / 100_000); // 0.1bps
+        (builder_id, builder_fee_rate)
+    }
     pub fn reserved_bits(&self) -> u128 {
-        (self.appendix >> 14) & ((1 << 50) - 1)
+        (self.appendix >> 14) & ((1 << 24) - 1)
     }
 
     pub fn version(&self) -> u8 {

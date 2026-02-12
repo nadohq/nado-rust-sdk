@@ -589,6 +589,42 @@ where
     deserializer.deserialize_seq(VecBytes20Deserializer)
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct WrappedVecBytes20(
+    #[serde(
+        serialize_with = "serialize_vec_bytes20",
+        deserialize_with = "deserialize_vec_bytes20"
+    )]
+    pub Vec<[u8; 20]>,
+);
+
+pub fn serialize_option_vec_bytes20<S>(
+    value: &Option<Vec<[u8; 20]>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    if let Some(value) = value {
+        serialize_vec_bytes20(value, serializer)
+    } else {
+        serializer.serialize_none()
+    }
+}
+
+pub fn deserialize_option_vec_bytes20<'de, D>(
+    deserializer: D,
+) -> Result<Option<Vec<[u8; 20]>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<WrappedVecBytes20>::deserialize(deserializer).map(
+        |opt_wrapped: Option<WrappedVecBytes20>| {
+            opt_wrapped.map(|wrapped: WrappedVecBytes20| wrapped.0)
+        },
+    )
+}
+
 pub fn serialize_f64<S>(value: &f64, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,

@@ -1,4 +1,6 @@
+use eyre::{eyre, Result};
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::atomic::{AtomicU8, Ordering};
 // #![allow(dead_code, clippy::blacklisted_name)]
 use crate::bindings::querier::{
@@ -11,8 +13,10 @@ use crate::eip712_structs::{
 use crate::product::Product;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_nested_vec_i128,
-    deserialize_option_bytes32, deserialize_option_vec_u8, deserialize_u128, deserialize_u64, deserialize_vec_i128, deserialize_vec_u8, serialize_bytes20,
-    serialize_bytes32, serialize_i128, serialize_nested_vec_i128, serialize_option_bytes32,
+    deserialize_option_bytes32, deserialize_option_vec_u8,
+    deserialize_u128, deserialize_u64, deserialize_vec_i128,
+    deserialize_vec_u8, serialize_bytes20, serialize_bytes32, serialize_i128,
+    serialize_nested_vec_i128, serialize_option_bytes32,
     serialize_option_vec_u8, serialize_u128, serialize_u64,
     serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
 };
@@ -335,6 +339,8 @@ pub enum Execute {
         )]
         cancel_signature: Vec<u8>,
         place_order: PlaceOrder,
+        #[serde(default)]
+        place_requires_unfilled: Option<bool>,
     },
 
     TransferQuote {
@@ -363,6 +369,41 @@ pub enum Execute {
         )]
         signature: Vec<u8>,
     },
+}
+
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct TradingStatusUpdate {
+    pub product_id: u32,
+    pub trading_status: TradingStatus,
+}
+
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct OiCapUpdate {
+    pub product_id: u32,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub oi_cap_x18: i128,
+}
+
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct NlpSlippageUpdate {
+    pub product_id: u32,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub slippage_x18: i128,
 }
 
 #[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug)]
@@ -1242,6 +1283,8 @@ pub struct SymbolsResponseData {
     )]
     pub long_weight_maintenance_x18: i128,
     pub max_open_interest_x18: Option<WrappedI128>,
+    #[serde(default)]
+    pub trading_status: TradingStatus,
 }
 
 impl SymbolsResponseData {
@@ -1420,6 +1463,55 @@ pub struct MarketLiquidityResponse {
 pub enum Status {
     Success,
     Failure,
+}
+
+#[derive(
+    Archive,
+    RkyvDeserialize,
+    RkyvSerialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Default,
+)]
+#[archive(check_bytes)]
+#[serde(rename_all = "snake_case")]
+pub enum TradingStatus {
+    #[default]
+    Live,
+    PostOnly,
+    NotTradable,
+    ReduceOnly,
+}
+
+impl FromStr for TradingStatus {
+    type Err = eyre::Report;
+
+    fn from_str(trading_status: &str) -> Result<Self> {
+        match trading_status.to_lowercase().as_str() {
+            "live" => Ok(Self::Live),
+            "post_only" => Ok(Self::PostOnly),
+            "reduce_only" => Ok(Self::ReduceOnly),
+            "not_tradable" => Ok(Self::NotTradable),
+            _ => Err(eyre!("Invalid trading status: {trading_status}")),
+        }
+    }
+}
+
+impl std::fmt::Display for TradingStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            TradingStatus::Live => "live",
+            TradingStatus::PostOnly => "post_only",
+            TradingStatus::ReduceOnly => "reduce_only",
+            TradingStatus::NotTradable => "not_tradable",
+        };
+        write!(f, "{s}")
+    }
 }
 
 #[derive(

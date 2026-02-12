@@ -13,50 +13,66 @@ pub enum ClientMode {
 }
 
 impl ClientMode {
+    fn get_domain() -> &'static str {
+        let use_backup = std::env::var("USE_BACKUP_PUBLIC_BACKEND")
+            .unwrap_or_else(|_| "false".to_string())
+            .to_lowercase()
+            == "true";
+        if use_backup {
+            "nado-backend.xyz"
+        } else {
+            "nado.xyz"
+        }
+    }
+
     pub fn default_gateway_url(&self) -> String {
         let envtag = self.nado_envtag();
+        let domain = Self::get_domain();
         match self {
             Self::Local | Self::LocalAlt => {
-                format!("http://gateway.{envtag}.nado.xyz:80/v1")
+                format!("http://gateway.{envtag}.{domain}:80/v1")
             }
             _ => {
-                format!("https://gateway.{envtag}.nado.xyz/v1")
+                format!("https://gateway.{envtag}.{domain}/v1")
             }
         }
     }
 
     pub fn default_trigger_url(&self) -> String {
         let envtag = self.nado_envtag();
+        let domain = Self::get_domain();
         match self {
             Self::Local | Self::LocalAlt => {
-                format!("http://trigger.{envtag}.nado.xyz:8080/v1")
+                format!("http://trigger.{envtag}.{domain}:8080/v1")
             }
             _ => {
-                format!("https://trigger.{envtag}.nado.xyz/v1")
+                format!("https://trigger.{envtag}.{domain}/v1")
             }
         }
     }
 
     pub fn default_archive_url(&self) -> String {
         let envtag = self.nado_envtag();
+        let domain = Self::get_domain();
         match self {
             Self::Local | Self::LocalAlt => {
-                format!("http://archive.{envtag}.nado.xyz:8000/v1")
+                format!("http://archive.{envtag}.{domain}:8000/v1")
             }
             _ => {
-                format!("https://archive.{envtag}.nado.xyz/v1")
+                format!("https://archive.{envtag}.{domain}/v1")
             }
         }
     }
 
     pub fn default_gateway_ws_url(&self) -> String {
         let envtag = self.nado_envtag();
+        let domain = Self::get_domain();
         match self {
             Self::Local | Self::LocalAlt => {
-                format!("ws://gateway.{envtag}.nado.xyz:80/ws")
+                format!("ws://gateway.{envtag}.{domain}:80/ws")
             }
             _ => {
-                format!("wss://gateway.{envtag}.nado.xyz/ws")
+                format!("wss://gateway.{envtag}.{domain}/ws")
             }
         }
     }

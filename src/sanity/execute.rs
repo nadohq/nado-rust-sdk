@@ -131,7 +131,7 @@ async fn place_orders(client: &NadoClient) {
         .unwrap();
 
     let placed_order_digest = client
-        .cancel_and_place(cancel_tx, place)
+        .cancel_and_place(cancel_tx, place, false)
         .await
         .unwrap()
         .unwrap()

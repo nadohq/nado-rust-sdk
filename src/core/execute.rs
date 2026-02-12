@@ -102,12 +102,14 @@ pub trait NadoExecute: NadoQuery {
         &self,
         cancel_tx: Cancellation,
         place_order: PlaceOrder,
+        place_requires_unfilled: bool,
     ) -> Result<Option<PlaceOrderResponse>> {
         let cancel_signature = self.endpoint_signature(&cancel_tx)?;
         let execute = Execute::CancelAndPlace {
             cancel_tx,
             cancel_signature,
             place_order,
+            place_requires_unfilled: Some(place_requires_unfilled),
         };
         let execute_response_data = self.execute(execute).await?;
         map_response_type!(execute_response_data, ExecuteResponseData::PlaceOrder => PlaceOrderResponse)

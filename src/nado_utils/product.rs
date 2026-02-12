@@ -30,6 +30,7 @@ pub enum ProductRaw {
         feed_id: Option<String>,
         withdraw_fee: String,
         min_deposit_rate: String,
+        multiplier: Option<String>,
     },
     #[serde(rename_all = "camelCase")]
     Perp {
@@ -51,6 +52,7 @@ pub enum ProductRaw {
         max_open_interest: Option<String>,
         feed: Option<String>,
         feed_id: Option<String>,
+        multiplier: Option<String>,
     },
 }
 
@@ -80,6 +82,7 @@ pub enum Product {
         feed_id: Option<String>,
         withdraw_fee_x18: i128,
         min_deposit_rate_x18: i128,
+        multiplier_x18: Option<i128>,
     },
     Perp {
         product_id: u32,
@@ -99,6 +102,7 @@ pub enum Product {
         max_open_interest_x18: Option<i128>,
         feed: Option<String>,
         feed_id: Option<String>,
+        multiplier_x18: Option<i128>,
     },
 }
 
@@ -129,6 +133,7 @@ impl From<ProductRaw> for Product {
                 feed_id,
                 withdraw_fee,
                 min_deposit_rate,
+                multiplier,
             } => Product::Spot {
                 product_id,
                 symbol,
@@ -153,6 +158,7 @@ impl From<ProductRaw> for Product {
                 feed_id,
                 withdraw_fee_x18: str_to_x18(&withdraw_fee),
                 min_deposit_rate_x18: str_to_x18(&min_deposit_rate),
+                multiplier_x18: multiplier.map(|s| str_to_x18(&s)),
             },
             ProductRaw::Perp {
                 product_id,
@@ -172,6 +178,7 @@ impl From<ProductRaw> for Product {
                 max_open_interest,
                 feed,
                 feed_id,
+                multiplier,
             } => Product::Perp {
                 product_id,
                 symbol,
@@ -190,6 +197,7 @@ impl From<ProductRaw> for Product {
                 max_open_interest_x18: max_open_interest.map(|s| str_to_x18(&s)),
                 feed,
                 feed_id,
+                multiplier_x18: multiplier.map(|s| str_to_x18(&s)),
             },
         }
     }
@@ -299,6 +307,14 @@ impl Product {
         match self {
             Product::Spot { price_asset_id, .. } | Product::Perp { price_asset_id, .. } => {
                 price_asset_id.clone()
+            }
+        }
+    }
+
+    pub fn multiplier(&self) -> Option<i128> {
+        match self {
+            Product::Spot { multiplier_x18, .. } | Product::Perp { multiplier_x18, .. } => {
+                *multiplier_x18
             }
         }
     }
