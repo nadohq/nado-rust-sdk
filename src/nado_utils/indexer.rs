@@ -261,6 +261,14 @@ pub enum Query {
     InkAirdrop {
         address: H160,
     },
+
+    PrivateAlphaChoice {
+        address: H160,
+    },
+
+    NadoPoints {
+        address: H160,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -465,7 +473,7 @@ pub struct ProductResponse {
     pub products: Vec<Product>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Order {
     #[serde(
         serialize_with = "serialize_bytes32",
@@ -517,6 +525,21 @@ pub struct Order {
     )]
     pub appendix: u128,
     pub isolated: bool,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub closed_amount: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub realized_pnl: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub builder_fee: i128,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -862,6 +885,17 @@ pub struct Match {
     pub submission_idx: u64,
     pub isolated: bool,
     pub is_taker: bool,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub closed_amount: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub realized_pnl: i128,
+    pub builder_fee: i128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1405,4 +1439,58 @@ pub struct DirectDepositAddressResponse {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InkAirdropResponse {
     pub amount: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PrivateAlphaChoiceResponse {
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub points: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub fee_refund: i128,
+    pub nft_eligibility: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NadoPointsEpochData {
+    pub epoch: u32,
+    pub description: String,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub start_time: u64,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub end_time: u64,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub total_points: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub points: i128,
+    pub rank: u64,
+    pub tier: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NadoPointsAllTime {
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub points: i128,
+    pub rank: u64,
+    pub tier: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NadoPointsResponse {
+    pub points_per_epoch: Vec<NadoPointsEpochData>,
+    pub all_time_points: NadoPointsAllTime,
 }

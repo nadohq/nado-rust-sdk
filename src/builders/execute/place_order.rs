@@ -35,6 +35,7 @@ nado_builder!(
     spot_leverage: bool,
     borrow_margin: bool,
     mock_digest_and_signature: bool,
+    builder_info: (u32, u32),
     id: u64;
 
 
@@ -169,6 +170,10 @@ nado_builder!(
             }
 
         };
+        if let Some((builder_id, builder_fee_rate)) = self.builder_info {
+            appendix |= (builder_id as u128) << 48;
+            appendix |= (builder_fee_rate as u128) << 38;
+        }
 
         let default_sender = self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);
