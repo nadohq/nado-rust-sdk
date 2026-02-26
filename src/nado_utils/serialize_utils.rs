@@ -122,6 +122,25 @@ where
         .map_err(|_| D::Error::custom("invalid i128 value"))
 }
 
+pub fn serialize_option_i128<S>(value: &Option<i128>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    if let Some(value) = value {
+        serialize_i128(value, serializer)
+    } else {
+        serializer.serialize_none()
+    }
+}
+
+pub fn deserialize_option_i128<'de, D>(deserializer: D) -> Result<Option<i128>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<WrappedI128>::deserialize(deserializer)
+        .map(|opt_wrapped: Option<WrappedI128>| opt_wrapped.map(|wrapped: WrappedI128| wrapped.0))
+}
+
 pub fn serialize_i64<S>(value: &i64, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,

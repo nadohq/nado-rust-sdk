@@ -47,7 +47,7 @@ macro_rules! get_nado_builder {
         }
     };
     ($method_name:ident, $builder_name:ident) => {
-        fn $method_name(&self) -> $builder_name<Self> {
+        fn $method_name(&'_ self) -> $builder_name<'_, Self> {
             $builder_name::new(&self)
         }
     };

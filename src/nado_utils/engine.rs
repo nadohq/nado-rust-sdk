@@ -13,12 +13,10 @@ use crate::eip712_structs::{
 use crate::product::Product;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_nested_vec_i128,
-    deserialize_option_bytes32, deserialize_option_vec_u8,
-    deserialize_u128, deserialize_u64, deserialize_vec_i128,
-    deserialize_vec_u8, serialize_bytes20, serialize_bytes32, serialize_i128,
-    serialize_nested_vec_i128, serialize_option_bytes32,
-    serialize_option_vec_u8, serialize_u128, serialize_u64,
-    serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
+    deserialize_option_bytes32, deserialize_option_vec_u8, deserialize_u128, deserialize_u64,
+    deserialize_vec_i128, deserialize_vec_u8, serialize_bytes20, serialize_bytes32, serialize_i128,
+    serialize_nested_vec_i128, serialize_option_bytes32, serialize_option_vec_u8, serialize_u128,
+    serialize_u64, serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
 };
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
@@ -404,6 +402,24 @@ pub struct NlpSlippageUpdate {
         deserialize_with = "deserialize_i128"
     )]
     pub slippage_x18: i128,
+}
+
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct IsolatedOnlyUpdate {
+    pub product_id: u32,
+    pub isolated_only: bool,
+}
+
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct NlpLiquidationUpdate {
+    pub product_id: u32,
+    pub is_nlp_liquidation: bool,
 }
 
 #[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug)]
@@ -1285,6 +1301,8 @@ pub struct SymbolsResponseData {
     pub max_open_interest_x18: Option<WrappedI128>,
     #[serde(default)]
     pub trading_status: TradingStatus,
+    #[serde(default)]
+    pub isolated_only: bool,
 }
 
 impl SymbolsResponseData {
@@ -1486,6 +1504,7 @@ pub enum TradingStatus {
     PostOnly,
     NotTradable,
     ReduceOnly,
+    SoftReduceOnly,
 }
 
 impl FromStr for TradingStatus {
@@ -1497,6 +1516,7 @@ impl FromStr for TradingStatus {
             "post_only" => Ok(Self::PostOnly),
             "reduce_only" => Ok(Self::ReduceOnly),
             "not_tradable" => Ok(Self::NotTradable),
+            "soft_reduce_only" => Ok(Self::SoftReduceOnly),
             _ => Err(eyre!("Invalid trading status: {trading_status}")),
         }
     }
@@ -1509,6 +1529,7 @@ impl std::fmt::Display for TradingStatus {
             TradingStatus::PostOnly => "post_only",
             TradingStatus::ReduceOnly => "reduce_only",
             TradingStatus::NotTradable => "not_tradable",
+            TradingStatus::SoftReduceOnly => "soft_reduce_only",
         };
         write!(f, "{s}")
     }
