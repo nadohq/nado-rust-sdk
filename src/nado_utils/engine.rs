@@ -406,6 +406,24 @@ pub struct NlpSlippageUpdate {
     pub slippage_x18: i128,
 }
 
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct IsolatedOnlyUpdate {
+    pub product_id: u32,
+    pub isolated_only: bool,
+}
+
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct NlpLiquidationUpdate {
+    pub product_id: u32,
+    pub is_nlp_liquidation: bool,
+}
+
 #[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 #[archive(check_bytes)]
@@ -1285,6 +1303,8 @@ pub struct SymbolsResponseData {
     pub max_open_interest_x18: Option<WrappedI128>,
     #[serde(default)]
     pub trading_status: TradingStatus,
+    #[serde(default)]
+    pub isolated_only: bool,
 }
 
 impl SymbolsResponseData {
@@ -1486,6 +1506,7 @@ pub enum TradingStatus {
     PostOnly,
     NotTradable,
     ReduceOnly,
+    SoftReduceOnly,
 }
 
 impl FromStr for TradingStatus {
@@ -1497,6 +1518,7 @@ impl FromStr for TradingStatus {
             "post_only" => Ok(Self::PostOnly),
             "reduce_only" => Ok(Self::ReduceOnly),
             "not_tradable" => Ok(Self::NotTradable),
+            "soft_reduce_only" => Ok(Self::SoftReduceOnly),
             _ => Err(eyre!("Invalid trading status: {trading_status}")),
         }
     }
@@ -1509,6 +1531,7 @@ impl std::fmt::Display for TradingStatus {
             TradingStatus::PostOnly => "post_only",
             TradingStatus::ReduceOnly => "reduce_only",
             TradingStatus::NotTradable => "not_tradable",
+            TradingStatus::SoftReduceOnly => "soft_reduce_only",
         };
         write!(f, "{s}")
     }
