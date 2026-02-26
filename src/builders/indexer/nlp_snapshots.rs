@@ -19,10 +19,10 @@ nado_builder!(
     build_and_call!(self, query, get_nlp_snapshots => NlpSnapshotsResponse);
 
     pub fn build(&self) -> Result<indexer::Query> {
-        let interval = if self.granularity.is_some() && self.count.is_some() {
+        let interval = if let (Some(granularity), Some(count)) = (self.granularity, self.count) {
             Some(Interval {
-                count: self.count.unwrap(),
-                granularity: self.granularity.unwrap(),
+                count,
+                granularity,
                 max_time: wrapped_option_u64(self.max_time),
             })
         } else {

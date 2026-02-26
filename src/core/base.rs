@@ -38,7 +38,7 @@ pub trait NadoBase: Clone + Sync {
 
     fn subaccount_name_bytes(&self) -> [u8; 12];
 
-    fn signer(&self) -> NadoSigner<Self> {
+    fn signer(&self) -> NadoSigner<'_, Self> {
         NadoSigner::new(self)
     }
 
