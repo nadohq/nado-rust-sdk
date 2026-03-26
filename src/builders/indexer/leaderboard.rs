@@ -2,7 +2,7 @@ use eyre::Result;
 
 use crate::core::indexer::NadoIndexer;
 use crate::indexer;
-use crate::indexer::{LeaderboardResponse, LeaderboardType};
+use crate::indexer::{LeaderboardResponse, LeaderboardType, SortOrder};
 use crate::serialize_utils::{WrappedU32, WrappedU64};
 use crate::utils::client_error::none_error;
 use crate::{build_and_call, fields_to_vars, nado_builder};
@@ -13,7 +13,8 @@ nado_builder!(
     contest_id: u32,
     rank_type: LeaderboardType,
     start: u64,
-    limit: u64;
+    limit: u64,
+    order: SortOrder;
 
     build_and_call!(self, query, get_leaderboard => LeaderboardResponse);
 
@@ -24,6 +25,7 @@ nado_builder!(
             rank_type,
             start: self.start.map(WrappedU64),
             limit: self.limit.map(WrappedU64),
+            order: self.order,
         })
     }
 

@@ -734,6 +734,32 @@ pub struct LeaderboardAuthentication {
     pub sender: [u8; 32],
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub expiration: u64,
+    pub contestIds: Vec<u32>,
+}
+
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Eip712,
+    ethers :: contract :: EthAbiType,
+    ethers :: contract :: EthAbiCodec,
+)]
+#[eip712()]
+#[allow(non_snake_case)]
+pub struct SocialAuthentication {
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub sender: [u8; 32],
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub expiration: u64,
+    pub provider: String,
 }
 
 pub fn to_bytes12(s: &str) -> [u8; 12] {

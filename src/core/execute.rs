@@ -64,7 +64,11 @@ pub trait NadoExecute: NadoQuery {
 
     async fn cancel_orders(&self, tx: Cancellation) -> Result<Option<CancelOrdersResponse>> {
         let signature = self.endpoint_signature(&tx)?;
-        let execute = Execute::CancelOrders { tx, signature };
+        let execute = Execute::CancelOrders {
+            tx,
+            signature,
+            id: None,
+        };
         let execute_response_data = self.execute(execute).await?;
         match_cancel_orders_response(execute_response_data)
     }
@@ -86,6 +90,7 @@ pub trait NadoExecute: NadoQuery {
             tx,
             signature,
             digest,
+            id: None,
         };
         let execute_response_data = self.execute(execute).await?;
         match_cancel_orders_response(execute_response_data)

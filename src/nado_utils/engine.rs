@@ -306,6 +306,9 @@ pub enum Execute {
             deserialize_with = "deserialize_vec_u8"
         )]
         signature: Vec<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default)]
+        id: Option<u64>,
     },
     CancelProductOrders {
         tx: CancellationProducts,
@@ -320,6 +323,9 @@ pub enum Execute {
         )]
         #[serde(default)]
         digest: Option<[u8; 32]>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default)]
+        id: Option<u64>,
     },
     LinkSigner {
         tx: LinkSigner,
