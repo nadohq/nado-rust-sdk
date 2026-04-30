@@ -200,7 +200,7 @@ pub enum Query {
 
     Leaderboard {
         contest_id: WrappedU32,
-        rank_type: LeaderboardType,
+        rank_type: Option<LeaderboardType>,
         start: Option<WrappedU64>,
         limit: Option<WrappedU64>,
         order: Option<SortOrder>,
@@ -216,7 +216,7 @@ pub enum Query {
     },
 
     LeaderboardContests {
-        contest_ids: Vec<WrappedU32>,
+        contest_ids: Option<Vec<WrappedU32>>,
         active: Option<bool>,
     },
 
@@ -226,7 +226,7 @@ pub enum Query {
             serialize_with = "serialize_bytes32"
         )]
         subaccount: [u8; 32],
-        contest_ids: Vec<WrappedU32>,
+        contest_ids: Option<Vec<WrappedU32>>,
         active: Option<bool>,
     },
 
@@ -394,6 +394,15 @@ impl Balance {
 pub enum Limit {
     Raw(WrappedU32),
     Txs(WrappedU32),
+}
+
+impl Limit {
+    pub fn count(&self) -> u32 {
+        match self {
+            Limit::Raw(count) => count.0,
+            Limit::Txs(count) => count.0,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -573,11 +582,8 @@ pub struct Order {
     pub first_fill_timestamp: u64,
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub last_fill_timestamp: u64,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub prev_position: i128,
+    pub pre_balance: MatchBalances,
+    pub post_balance: MatchBalances,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -933,6 +939,10 @@ pub struct Match {
         deserialize_with = "deserialize_i128"
     )]
     pub realized_pnl: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
     pub builder_fee: i128,
     #[serde(
         serialize_with = "serialize_i128",
@@ -946,7 +956,7 @@ pub struct Match {
     pub margin: Option<i128>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct MatchBalances {
     pub base: Balance,
     pub quote: Option<Balance>,
@@ -1336,6 +1346,14 @@ pub struct SymbolsResponseV2 {
     pub trading_status: TradingStatus,
     pub isolated_only: bool,
     pub market_hours: Option<MarketHours>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exchange_rate_x18: Option<WrappedI128>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub boost_type: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub taker_multiplier: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maker_multiplier: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -1404,12 +1422,14 @@ pub struct Interval {
     pub max_time: Option<WrappedU64>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LeaderboardType {
     PNL,
     ROI,
     Volume,
+    Liquidation,
+    Balance,
 }
 
 impl LeaderboardType {
@@ -1418,6 +1438,23 @@ impl LeaderboardType {
             LeaderboardType::PNL => "pnl",
             LeaderboardType::ROI => "roi",
             LeaderboardType::Volume => "volume",
+            LeaderboardType::Liquidation => "liquidation",
+            LeaderboardType::Balance => "balance",
+        }
+    }
+}
+
+impl std::str::FromStr for LeaderboardType {
+    type Err = eyre::Report;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "pnl" => Ok(LeaderboardType::PNL),
+            "roi" => Ok(LeaderboardType::ROI),
+            "volume" => Ok(LeaderboardType::Volume),
+            "liquidation" => Ok(LeaderboardType::Liquidation),
+            "balance" => Ok(LeaderboardType::Balance),
+            _ => Err(eyre::eyre!("unsupported leaderboard type: {}", s)),
         }
     }
 }
@@ -1437,13 +1474,43 @@ impl SortOrder {
             SortOrder::Desc => "DESC",
         }
     }
+}
 
-    pub fn reverse(&self) -> SortOrder {
-        match self {
-            SortOrder::Asc => SortOrder::Desc,
-            SortOrder::Desc => SortOrder::Asc,
+impl std::str::FromStr for SortOrder {
+    type Err = eyre::Report;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_uppercase().as_str() {
+            "ASC" => Ok(SortOrder::Asc),
+            "DESC" => Ok(SortOrder::Desc),
+            _ => Err(eyre::eyre!("unsupported sort order: {}", s)),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum QualificationStatus {
+    Qualified,
+    InsufficientAccountValue,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TrackPosition {
+    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
+    pub value: f64,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub rank: u64,
+    pub qualification_status: QualificationStatus,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ContestTrack {
+    pub track_id: u32,
+    pub rank_type: LeaderboardType,
+    pub sort_order: SortOrder,
+    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
+    pub threshold: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1455,21 +1522,10 @@ pub struct LeaderboardPosition {
     pub subaccount: [u8; 32],
     pub contest_id: u32,
     #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub pnl: f64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub pnl_rank: u64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub roi: f64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub roi_rank: u64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
     pub account_value: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub volume: f64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub volume_rank: u64,
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub update_time: u64,
+    pub tracks: HashMap<LeaderboardType, TrackPosition>,
     #[serde(default)]
     pub social_accounts: Vec<SocialAccountInfo>,
 }
@@ -1500,17 +1556,14 @@ pub struct LeaderboardContest {
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub end_time: u64,
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub timeframe: u64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub count: u64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub threshold: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub volume_threshold: f64,
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub last_updated: u64,
     pub product_ids: Vec<u32>,
     pub active: bool,
+    pub title: String,
+    pub description: String,
+    pub tracks: Vec<ContestTrack>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

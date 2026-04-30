@@ -13,10 +13,11 @@ use crate::eip712_structs::{
 use crate::product::Product;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_nested_vec_i128,
-    deserialize_option_bytes32, deserialize_option_vec_u8, deserialize_u128, deserialize_u64,
-    deserialize_vec_i128, deserialize_vec_u8, serialize_bytes20, serialize_bytes32, serialize_i128,
-    serialize_nested_vec_i128, serialize_option_bytes32, serialize_option_vec_u8, serialize_u128,
-    serialize_u64, serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
+    deserialize_option_bytes32, deserialize_option_i128, deserialize_option_vec_u8,
+    deserialize_u128, deserialize_u64, deserialize_vec_i128, deserialize_vec_u8, serialize_bytes20,
+    serialize_bytes32, serialize_i128, serialize_nested_vec_i128, serialize_option_bytes32,
+    serialize_option_i128, serialize_option_vec_u8, serialize_u128, serialize_u64,
+    serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
 };
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
@@ -306,6 +307,13 @@ pub enum Execute {
             deserialize_with = "deserialize_vec_u8"
         )]
         signature: Vec<u8>,
+        #[serde(
+            serialize_with = "serialize_option_i128",
+            deserialize_with = "deserialize_option_i128"
+        )]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default)]
+        required_unfilled_amount: Option<i128>,
         #[serde(skip_serializing_if = "Option::is_none")]
         #[serde(default)]
         id: Option<u64>,
@@ -345,6 +353,13 @@ pub enum Execute {
         place_order: PlaceOrder,
         #[serde(default)]
         place_requires_unfilled: Option<bool>,
+        #[serde(
+            serialize_with = "serialize_option_i128",
+            deserialize_with = "deserialize_option_i128"
+        )]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default)]
+        required_unfilled_amount: Option<i128>,
     },
 
     TransferQuote {

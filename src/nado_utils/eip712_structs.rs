@@ -4,9 +4,9 @@ use crate::bindings::{endpoint, offchain_exchange};
 use crate::isolated::is_isolated_subaccount;
 use crate::math::{mul_x18, ONE_X18, ONE_X6};
 use crate::serialize_utils::{
-    deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_u128, deserialize_u64,
-    deserialize_vec_bytes32, serialize_bytes20, serialize_bytes32, serialize_i128, serialize_u128,
-    serialize_u64, serialize_vec_bytes32,
+    deserialize_bytes32, deserialize_i128, deserialize_u128, deserialize_u64,
+    deserialize_vec_bytes32, serialize_bytes32, serialize_i128, serialize_u128, serialize_u64,
+    serialize_vec_bytes32,
 };
 use ethers::prelude::*;
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
@@ -702,14 +702,11 @@ pub struct StreamAuthentication {
 )]
 #[eip712()]
 #[allow(non_snake_case)]
-pub struct TaskAuthentication {
-    #[serde(
-        serialize_with = "serialize_bytes20",
-        deserialize_with = "deserialize_bytes20"
-    )]
-    pub sender: [u8; 20],
+pub struct NadoAuthentication {
+    pub sender: [u8; 32],
+    pub payloadHash: [u8; 32],
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub expiration: u64,
+    pub nonce: u64,
 }
 
 #[derive(

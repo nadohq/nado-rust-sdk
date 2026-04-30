@@ -67,6 +67,7 @@ pub trait NadoExecute: NadoQuery {
         let execute = Execute::CancelOrders {
             tx,
             signature,
+            required_unfilled_amount: None,
             id: None,
         };
         let execute_response_data = self.execute(execute).await?;
@@ -115,6 +116,7 @@ pub trait NadoExecute: NadoQuery {
             cancel_signature,
             place_order,
             place_requires_unfilled: Some(place_requires_unfilled),
+            required_unfilled_amount: None,
         };
         let execute_response_data = self.execute(execute).await?;
         map_response_type!(execute_response_data, ExecuteResponseData::PlaceOrder => PlaceOrderResponse)

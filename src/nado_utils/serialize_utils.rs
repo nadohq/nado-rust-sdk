@@ -569,6 +569,29 @@ pub struct WrappedBytes20(
     pub [u8; 20],
 );
 
+pub fn serialize_option_bytes20<S>(
+    value: &Option<[u8; 20]>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    if let Some(value) = value {
+        serialize_bytes20(value, serializer)
+    } else {
+        serializer.serialize_none()
+    }
+}
+
+pub fn deserialize_option_bytes20<'de, D>(deserializer: D) -> Result<Option<[u8; 20]>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<WrappedBytes20>::deserialize(deserializer).map(
+        |opt_wrapped: Option<WrappedBytes20>| opt_wrapped.map(|wrapped: WrappedBytes20| wrapped.0),
+    )
+}
+
 struct VecBytes20Deserializer;
 
 impl<'de> Visitor<'de> for VecBytes20Deserializer {
