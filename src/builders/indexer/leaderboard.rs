@@ -19,10 +19,10 @@ nado_builder!(
     build_and_call!(self, query, get_leaderboard => LeaderboardResponse);
 
     pub fn build(&self) -> Result<indexer::Query> {
-        fields_to_vars!(self, contest_id, (rank_type: clone));
+        fields_to_vars!(self, contest_id);
         Ok(indexer::Query::Leaderboard {
             contest_id: WrappedU32(contest_id),
-            rank_type,
+            rank_type: self.rank_type,
             start: self.start.map(WrappedU64),
             limit: self.limit.map(WrappedU64),
             order: self.order,
