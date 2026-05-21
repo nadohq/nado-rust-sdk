@@ -17,7 +17,8 @@ nado_builder!(
     spot_leverage: bool,
     reduce_only: bool,
     isolated: bool,
-    borrow_margin: bool;
+    borrow_margin: bool,
+    avg_price_x18: i128;
 
     build_and_call!(self, query, get_max_order_size => MaxOrderSizeResponse);
 
@@ -32,6 +33,7 @@ nado_builder!(
             reduce_only: optional_bool_to_string(self.reduce_only),
             isolated: optional_bool_to_string(self.isolated),
             borrow_margin: optional_bool_to_string(self.borrow_margin),
+            avg_price_x18: self.avg_price_x18,
         })
     }
 );

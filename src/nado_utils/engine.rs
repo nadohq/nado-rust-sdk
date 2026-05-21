@@ -182,6 +182,13 @@ pub enum Query {
         reduce_only: Option<String>,
         isolated: Option<String>,
         borrow_margin: Option<String>,
+        #[serde(
+            serialize_with = "serialize_option_i128",
+            deserialize_with = "deserialize_option_i128"
+        )]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default)]
+        avg_price_x18: Option<i128>,
     },
 
     MaxWithdrawable {

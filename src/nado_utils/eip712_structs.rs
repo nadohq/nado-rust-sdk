@@ -703,6 +703,7 @@ pub struct StreamAuthentication {
 #[eip712()]
 #[allow(non_snake_case)]
 pub struct NadoAuthentication {
+    pub method: String,
     pub sender: [u8; 32],
     pub payloadHash: [u8; 32],
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
