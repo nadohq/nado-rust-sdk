@@ -66,6 +66,24 @@ where
     }
 }
 
+pub fn opt_str_or_u64<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Either {
+        Str(String),
+        U64(u64),
+    }
+    Option::<Either>::deserialize(deserializer).map(|opt| {
+        opt.and_then(|v| match v {
+            Either::Str(s) => s.parse().ok(),
+            Either::U64(n) => Some(n),
+        })
+    })
+}
+
 fn u64_in_i64_range(v: u64) -> bool {
     v <= i64::MAX as u64
 }
@@ -88,6 +106,26 @@ where
 {
     let s = String::deserialize(deserializer)?;
     u64::from_str(&s).map_err(|_| D::Error::custom("invalid u64 value"))
+}
+
+pub fn serialize_option_u64<S>(value: &Option<u64>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    if let Some(value) = value {
+        serialize_u64(value, serializer)
+    } else {
+        serializer.serialize_none()
+    }
+}
+
+pub fn deserialize_option_u64<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(deserializer)?;
+    opt.map(|s| u64::from_str(&s).map_err(|_| D::Error::custom("invalid u64 value")))
+        .transpose()
 }
 
 pub fn serialize_u128<S>(value: &u128, serializer: S) -> Result<S::Ok, S::Error>
