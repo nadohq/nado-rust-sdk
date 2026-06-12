@@ -88,6 +88,25 @@ fn u64_in_i64_range(v: u64) -> bool {
     v <= i64::MAX as u64
 }
 
+pub fn str_or_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum StrOrF64<'a> {
+        Str(&'a str),
+        String(String),
+        F64(f64),
+    }
+
+    Ok(match StrOrF64::deserialize(deserializer)? {
+        StrOrF64::Str(v) => v.parse().map_err(D::Error::custom)?,
+        StrOrF64::String(v) => v.parse().map_err(D::Error::custom)?,
+        StrOrF64::F64(v) => v,
+    })
+}
+
 // why do we have this when there is str_or_u64 above?
 // what's above allows us to take query inputs as u64s or strings; it works great for json
 // because json is self-describing, but it won't work with bincode because bincode is not
@@ -758,4 +777,33 @@ where
         StrOrU64::Str(v) => v.parse().unwrap_or(0), // Ignoring parsing errors
         StrOrU64::I64(v) => v,
     })
+}
+
+pub fn serialize_u64_keyed_map<S, V>(
+    map: &std::collections::HashMap<u64, V>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+    V: Serialize,
+{
+    use serde::ser::SerializeMap;
+    let mut m = serializer.serialize_map(Some(map.len()))?;
+    for (k, v) in map {
+        m.serialize_entry(&k.to_string(), v)?;
+    }
+    m.end()
+}
+
+pub fn deserialize_u64_keyed_map<'de, D, V>(
+    deserializer: D,
+) -> Result<std::collections::HashMap<u64, V>, D::Error>
+where
+    D: Deserializer<'de>,
+    V: Deserialize<'de>,
+{
+    std::collections::HashMap::<String, V>::deserialize(deserializer)?
+        .into_iter()
+        .map(|(k, v)| k.parse::<u64>().map(|k| (k, v)).map_err(Error::custom))
+        .collect()
 }

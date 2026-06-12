@@ -6,6 +6,7 @@ pub mod interest_and_funding;
 pub mod leaderboard;
 pub mod market_snapshots;
 pub mod matches;
+pub mod matches_and_liquidations;
 pub mod multi_product_snapshots;
 pub mod nlp_funding_payment;
 pub mod nlp_interest_payment;

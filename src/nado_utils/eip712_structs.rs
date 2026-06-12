@@ -4,11 +4,14 @@ use crate::bindings::{endpoint, offchain_exchange};
 use crate::isolated::is_isolated_subaccount;
 use crate::math::{mul_x18, ONE_X18, ONE_X6};
 use crate::serialize_utils::{
-    deserialize_bytes32, deserialize_i128, deserialize_u128, deserialize_u64,
-    deserialize_vec_bytes32, serialize_bytes32, serialize_i128, serialize_u128, serialize_u64,
-    serialize_vec_bytes32,
+    deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_u128, deserialize_u64,
+    deserialize_vec_bytes32, serialize_bytes20, serialize_bytes32, serialize_i128, serialize_u128,
+    serialize_u64, serialize_vec_bytes32,
 };
+use ethers::abi::{encode, Token};
 use ethers::prelude::*;
+use ethers::types::transaction::eip712::{EIP712Domain, Eip712 as Eip712Trait, Eip712Error};
+use ethers_core::utils::keccak256;
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 use std::cmp::{max, min};
@@ -492,6 +495,74 @@ impl WithdrawCollateral {
             amount: self.amount,
             nonce: self.nonce,
         }
+    }
+}
+
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
+#[archive(check_bytes)]
+#[allow(non_snake_case)]
+pub struct WithdrawCollateralV2 {
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub sender: [u8; 32],
+    pub productId: u32,
+    #[serde(
+        serialize_with = "serialize_u128",
+        deserialize_with = "deserialize_u128"
+    )]
+    pub amount: u128,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub nonce: u64,
+    #[serde(
+        serialize_with = "serialize_bytes20",
+        deserialize_with = "deserialize_bytes20"
+    )]
+    pub sendTo: [u8; 20],
+    #[serde(
+        serialize_with = "serialize_u128",
+        deserialize_with = "deserialize_u128"
+    )]
+    pub appendix: u128,
+}
+
+impl WithdrawCollateralV2 {
+    pub fn to_binding(&self) -> endpoint::WithdrawCollateralV2 {
+        endpoint::WithdrawCollateralV2 {
+            sender: self.sender,
+            product_id: self.productId,
+            amount: self.amount,
+            nonce: self.nonce,
+            send_to: Address::from_slice(&self.sendTo),
+            appendix: self.appendix,
+        }
+    }
+}
+
+impl Eip712Trait for WithdrawCollateralV2 {
+    type Error = Eip712Error;
+
+    fn domain(&self) -> std::result::Result<EIP712Domain, Self::Error> {
+        Ok(EIP712Domain::default())
+    }
+
+    fn type_hash() -> std::result::Result<[u8; 32], Self::Error> {
+        Ok(keccak256(
+            "WithdrawCollateralV2(bytes32 sender,uint32 productId,uint128 amount,uint64 nonce,address sendTo,uint128 appendix)",
+        ))
+    }
+
+    fn struct_hash(&self) -> std::result::Result<[u8; 32], Self::Error> {
+        Ok(keccak256(encode(&[
+            Token::FixedBytes(Self::type_hash()?.to_vec()),
+            Token::FixedBytes(self.sender.to_vec()),
+            Token::Uint(self.productId.into()),
+            Token::Uint(self.amount.into()),
+            Token::Uint(self.nonce.into()),
+            Token::Address(Address::from_slice(&self.sendTo)),
+            Token::Uint(self.appendix.into()),
+        ])))
     }
 }
 

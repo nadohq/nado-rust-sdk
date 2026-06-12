@@ -49,6 +49,7 @@ pub enum TxType {
     CloseIsolatedSubaccount = 29,
     UpdateBuilder = 30,
     ClaimBuilderFee = 31,
+    WithdrawCollateralV2 = 32,
 }
 
 impl TxType {
@@ -86,6 +87,7 @@ impl TxType {
             29 => Self::CloseIsolatedSubaccount,
             30 => Self::UpdateBuilder,
             31 => Self::ClaimBuilderFee,
+            32 => Self::WithdrawCollateralV2,
             _ => panic!("Invalid TxType"),
         }
     }
@@ -123,6 +125,7 @@ pub enum NadoTx {
 
     DepositCollateral(endpoint::DepositCollateral),
     WithdrawCollateral(endpoint::WithdrawCollateral),
+    WithdrawCollateralV2(endpoint::WithdrawCollateralV2),
 
     SettlePnl(endpoint::SettlePnl),
     PerpTick(endpoint::PerpTick),
@@ -160,6 +163,7 @@ impl NadoTx {
             NadoTx::LiquidateSubaccount(_) => TxType::LiquidateSubaccount,
             NadoTx::DepositCollateral(_) => TxType::DepositCollateral,
             NadoTx::WithdrawCollateral(_) => TxType::WithdrawCollateral,
+            NadoTx::WithdrawCollateralV2(_) => TxType::WithdrawCollateralV2,
             NadoTx::SpotTick(_) => TxType::SpotTick,
             NadoTx::UpdatePrice(_) => TxType::UpdatePrice,
             NadoTx::SettlePnl(_) => TxType::SettlePnl,
