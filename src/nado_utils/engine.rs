@@ -8,15 +8,16 @@ use crate::bindings::querier::{
 };
 use crate::eip712_structs::{
     BurnNlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintNlp, Order,
-    TransferQuote, WithdrawCollateral,
+    TransferQuote, WithdrawCollateral, WithdrawCollateralV2,
 };
 use crate::product::Product;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_nested_vec_i128,
     deserialize_option_bytes32, deserialize_option_i128, deserialize_option_vec_u8,
-    deserialize_u128, deserialize_u64, deserialize_vec_i128, deserialize_vec_u8, serialize_bytes20,
-    serialize_bytes32, serialize_i128, serialize_nested_vec_i128, serialize_option_bytes32,
-    serialize_option_i128, serialize_option_vec_u8, serialize_u128, serialize_u64,
+    deserialize_u128, deserialize_u64, deserialize_u64_keyed_map, deserialize_vec_i128,
+    deserialize_vec_u8, serialize_bytes20, serialize_bytes32, serialize_i128,
+    serialize_nested_vec_i128, serialize_option_bytes32, serialize_option_i128,
+    serialize_option_vec_u8, serialize_u128, serialize_u64, serialize_u64_keyed_map,
     serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
 };
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
@@ -298,6 +299,16 @@ pub enum Execute {
     },
     WithdrawCollateral {
         tx: WithdrawCollateral,
+        #[serde(
+            serialize_with = "serialize_vec_u8",
+            deserialize_with = "deserialize_vec_u8"
+        )]
+        signature: Vec<u8>,
+        spot_leverage: Option<bool>,
+        sequencer_risk_check: Option<bool>,
+    },
+    WithdrawCollateralV2 {
+        tx: WithdrawCollateralV2,
         #[serde(
             serialize_with = "serialize_vec_u8",
             deserialize_with = "deserialize_vec_u8"
@@ -613,6 +624,10 @@ impl From<ProductInfo> for AllProductsResponse {
 )]
 #[archive(check_bytes)]
 pub struct EdgeAllProductsResponse {
+    #[serde(
+        serialize_with = "serialize_u64_keyed_map",
+        deserialize_with = "deserialize_u64_keyed_map"
+    )]
     pub edge_all_products: HashMap<u64, AllProductsResponse>,
 }
 

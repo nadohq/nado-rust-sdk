@@ -11,7 +11,7 @@ use crate::builders::execute::slow_mode::SubmitSlowModeTxParams;
 use crate::core::query::NadoQuery;
 use crate::eip712_structs::{
     BurnNlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintNlp,
-    TransferQuote, WithdrawCollateral,
+    TransferQuote, WithdrawCollateral, WithdrawCollateralV2,
 };
 use crate::engine::{
     CancelOrdersResponse, Execute, ExecuteResponseData, PlaceOrder, PlaceOrderResponse,
@@ -136,6 +136,22 @@ pub trait NadoExecute: NadoQuery {
     ) -> Result<()> {
         let signature = self.endpoint_signature(&tx)?;
         let execute = Execute::WithdrawCollateral {
+            tx,
+            signature,
+            spot_leverage,
+            sequencer_risk_check: None,
+        };
+        self.execute(execute).await?;
+        Ok(())
+    }
+
+    async fn withdraw_collateral_v2(
+        &self,
+        tx: WithdrawCollateralV2,
+        spot_leverage: Option<bool>,
+    ) -> Result<()> {
+        let signature = self.endpoint_signature(&tx)?;
+        let execute = Execute::WithdrawCollateralV2 {
             tx,
             signature,
             spot_leverage,

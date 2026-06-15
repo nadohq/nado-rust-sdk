@@ -1,4 +1,4 @@
-use crate::bindings::endpoint::WithdrawCollateral;
+use crate::bindings::endpoint::{WithdrawCollateral, WithdrawCollateralV2};
 use crate::bindings::querier::{PerpBalance, PerpProduct, SpotBalance, SpotProduct};
 use crate::eip712_structs;
 use crate::eip712_structs::{LeaderboardAuthentication, SocialAuthentication};
@@ -102,6 +102,15 @@ pub enum Query {
     },
 
     Matches {
+        subaccounts: Option<Vec<WrappedBytes32>>,
+        product_ids: Option<Vec<WrappedU32>>,
+        max_time: Option<WrappedU64>,
+        limit: Option<WrappedU32>,
+        idx: Option<WrappedU64>,
+        isolated: Option<bool>,
+    },
+
+    MatchesAndLiquidations {
         subaccounts: Option<Vec<WrappedBytes32>>,
         product_ids: Option<Vec<WrappedU32>>,
         max_time: Option<WrappedU64>,
@@ -1493,6 +1502,8 @@ impl std::str::FromStr for SortOrder {
 pub enum QualificationStatus {
     Qualified,
     InsufficientAccountValue,
+    InsufficientVolume,
+    InsufficientAccountValueAndVolume,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1511,6 +1522,8 @@ pub struct ContestTrack {
     pub sort_order: SortOrder,
     #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
     pub threshold: f64,
+    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
+    pub volume_threshold: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1622,6 +1635,8 @@ pub struct UpdateSocialAccount {
 pub struct FastWithdrawalSignatureResponse {
     pub idx: WrappedU64,
     pub tx: WithdrawCollateral,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_v2: Option<WithdrawCollateralV2>,
     pub tx_bytes: Bytes,
     pub signatures: Vec<Bytes>,
 }

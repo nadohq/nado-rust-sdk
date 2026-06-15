@@ -15,13 +15,21 @@ nado_builder!(
     product_id: u32,
     nonce: u64,
     linked_sender: [u8; 32],
+    send_to: H160,
+    appendix: u128,
     spot_leverage: bool;
 
     // we do not use macro here because of extra required argument
     pub async fn execute(&self) -> Result<()> {
-        self.nado
-            .withdraw_collateral(self.build().await?, self.spot_leverage)
-            .await
+        if self.send_to.is_some() || self.appendix.is_some() {
+            self.nado
+                .withdraw_collateral_v2(self.build_v2().await?, self.spot_leverage)
+                .await
+        } else {
+            self.nado
+                .withdraw_collateral(self.build().await?, self.spot_leverage)
+                .await
+        }
     }
 
     pub async fn build_endpoint_tx(&self) -> Result<endpoint::WithdrawCollateral> {
@@ -32,6 +40,20 @@ nado_builder!(
                 amount: tx.amount,
                 nonce: tx.nonce,
                 product_id: tx.productId,
+            }
+        )
+    }
+
+    pub async fn build_endpoint_tx_v2(&self) -> Result<endpoint::WithdrawCollateralV2> {
+        let tx = self.build_v2().await?;
+        Ok(
+            endpoint::WithdrawCollateralV2 {
+                sender: tx.sender,
+                amount: tx.amount,
+                nonce: tx.nonce,
+                product_id: tx.productId,
+                send_to: H160::from_slice(&tx.sendTo),
+                appendix: tx.appendix,
             }
         )
     }
@@ -50,6 +72,27 @@ nado_builder!(
             amount,
             nonce,
             productId: product_id,
+        })
+    }
+
+    pub async fn build_v2(&self) -> Result<eip712_structs::WithdrawCollateralV2> {
+        let default_sender = self.nado.subaccount()?;
+        let sender = self.linked_sender.unwrap_or(default_sender);
+        let address = H160::from_slice(&sender[0..20]).0;
+        let nonce = self
+            .nonce
+            .unwrap_or(self.nado.next_tx_nonce(address).await?);
+        let appendix = self.appendix.unwrap_or(0);
+        let send_to = self.send_to.unwrap_or_else(H160::zero);
+        fields_to_vars!(self, amount, product_id);
+
+        Ok(eip712_structs::WithdrawCollateralV2 {
+            sender,
+            amount,
+            nonce,
+            productId: product_id,
+            sendTo: send_to.0,
+            appendix,
         })
     }
 );
