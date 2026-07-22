@@ -1,5 +1,4 @@
-use ethers::prelude::TxHash;
-use ethers_core::types::Bytes;
+use ethers_core::types::{Bytes as EthersBytes, H256};
 use eyre::{eyre, Result};
 
 use crate::bindings::endpoint;
@@ -75,9 +74,9 @@ nado_builder!(
         let digest = self.get_digest(&order)?;
         Ok(PlaceTriggerOrder {
             order,
-            signature: Bytes::from(signature),
+            signature: EthersBytes::from(signature),
             product_id,
-            digest: Some(TxHash(digest)),
+            digest: Some(H256::from(digest)),
             spot_leverage: self.spot_leverage,
             borrow_margin: self.borrow_margin,
             trigger,
@@ -106,7 +105,7 @@ nado_builder!(
     fn encode_digest(&self, order: &eip712_structs::Order) -> Result<[u8; 32]> {
         let domain = self.nado.signer().order_domain(self.get_product_id()?)?;
         let encoded = get_eip712_digest(order, &domain);
-        Ok(encoded.to_fixed_bytes())
+        Ok(encoded)
     }
 
     fn assert_trigger_unset(&self) -> Result<()> {
@@ -179,7 +178,7 @@ nado_builder!(
         let sender = self.linked_sender.unwrap_or(default_sender);
 
         Ok(eip712_structs::Order::from_binding(&endpoint::Order {
-            sender,
+            sender: sender.into(),
             price_x18,
             amount,
             expiration,

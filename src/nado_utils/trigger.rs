@@ -1,4 +1,4 @@
-use crate::eip712_structs::{Cancellation, ListTriggerOrders};
+use crate::eip712_structs::{Cancellation, DependencyUpdate, ListTriggerOrders};
 use crate::eip712_structs::{CancellationProducts, Order};
 use crate::engine::{ExecuteResponse, PlaceOrder, Status};
 use crate::serialize_utils::{deserialize_i128, serialize_i128, WrappedBytes32, WrappedI128};
@@ -337,6 +337,10 @@ pub enum Execute {
     },
     CancelProductOrders {
         tx: CancellationProducts,
+        signature: Bytes,
+    },
+    UpdateDependency {
+        tx: DependencyUpdate,
         signature: Bytes,
     },
 }

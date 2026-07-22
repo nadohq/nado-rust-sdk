@@ -1,24 +1,28 @@
+use alloy::rpc::types::TransactionReceipt;
+use alloy_primitives::{Address, U256};
 use async_trait::async_trait;
-use ethers::prelude::{Address, U256};
-use ethers_core::types::{Bytes, TransactionReceipt};
-use ethers_signers::Signer;
+use ethers_core::types::Bytes as EthersBytes;
 use eyre::{eyre, Result};
 
-use crate::bindings::endpoint::Endpoint;
+use crate::bindings::endpoint;
 use crate::bindings::querier::Querier;
 use crate::builders::execute::deposit_collateral::DepositCollateralParams;
 use crate::builders::execute::slow_mode::SubmitSlowModeTxParams;
 use crate::core::query::NadoQuery;
 use crate::eip712_structs::{
-    BurnNlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintNlp,
-    TransferQuote, WithdrawCollateral, WithdrawCollateralV2,
+    BurnNlp, Cancellation, CancellationProducts, DependencyUpdate, LinkSigner, LiquidateSubaccount,
+    MintNlp, TransferQuote, WithdrawCollateral, WithdrawCollateralV2,
 };
 use crate::engine::{
     CancelOrdersResponse, Execute, ExecuteResponseData, PlaceOrder, PlaceOrderResponse,
 };
-use crate::provider::NadoProvider;
+use crate::provider::{
+    signer_provider_from_signer_sync, wait_for_transaction_receipt, NadoProvider,
+};
 use crate::trigger;
-use crate::utils::deposit::{erc20_client, provider_with_signer};
+use crate::utils::constants::ETHERS_DEFAULT_PENDING_TX_RETRIES;
+use crate::utils::deposit::erc20_client;
+use crate::utils::nonce::order_nonce;
 use crate::utils::response::match_cancel_orders_response;
 
 macro_rules! map_response_type {
@@ -75,7 +79,7 @@ pub trait NadoExecute: NadoQuery {
     }
 
     async fn cancel_trigger_orders(&self, tx: Cancellation) -> Result<()> {
-        let signature: Bytes = self.endpoint_signature(&tx)?.into();
+        let signature: EthersBytes = self.endpoint_signature(&tx)?.into();
         let execute = trigger::Execute::CancelOrders { tx, signature };
         self.execute_trigger(execute).await?;
         Ok(())
@@ -98,10 +102,27 @@ pub trait NadoExecute: NadoQuery {
     }
 
     async fn cancel_product_trigger_orders(&self, tx: CancellationProducts) -> Result<()> {
-        let signature: Bytes = self.endpoint_signature(&tx)?.into();
+        let signature: EthersBytes = self.endpoint_signature(&tx)?.into();
         let execute = trigger::Execute::CancelProductOrders { tx, signature };
         self.execute_trigger(execute).await?;
         Ok(())
+    }
+
+    async fn update_dependency(
+        &self,
+        old_digest: [u8; 32],
+        new_digest: [u8; 32],
+    ) -> Result<Option<PlaceOrderResponse>> {
+        let tx = DependencyUpdate {
+            sender: self.subaccount()?,
+            oldDigest: old_digest,
+            newDigest: new_digest,
+            nonce: order_nonce(None),
+        };
+        let signature: EthersBytes = self.endpoint_signature(&tx)?.into();
+        let execute = trigger::Execute::UpdateDependency { tx, signature };
+        let execute_response_data = self.execute_trigger(execute).await?;
+        map_response_type!(execute_response_data, ExecuteResponseData::PlaceOrder => PlaceOrderResponse)
     }
 
     async fn cancel_and_place(
@@ -236,13 +257,19 @@ pub trait NadoExecute: NadoQuery {
         gas_price: Option<u128>,
     ) -> Result<Option<TransactionReceipt>> {
         let erc20_client = erc20_client(self, product_id).await?;
-        let mut tx = erc20_client.approve(spender, U256::from(amount));
+        let mut call = erc20_client.approve(spender, U256::from(amount));
         if let Some(price) = gas_price {
-            tx = tx.gas_price(price)
+            call = call.gas_price(price);
         }
-        let tx_receipt = tx.send().await?.await?;
+        let pending_tx = call.send().await?;
+        let receipt = wait_for_transaction_receipt(
+            erc20_client.provider(),
+            *pending_tx.tx_hash(),
+            ETHERS_DEFAULT_PENDING_TX_RETRIES,
+        )
+        .await?;
         println!("approved: {amount} of product id: {product_id}");
-        Ok(tx_receipt)
+        Ok(receipt)
     }
 
     async fn get_token_allowance(&self, product_id: u32) -> Result<U256> {
@@ -258,7 +285,7 @@ pub trait NadoExecute: NadoQuery {
     async fn get_token_balance(&self, product_id: u32) -> Result<U256> {
         let erc20_client = erc20_client(self, product_id).await?;
         let balance = erc20_client
-            .balance_of(self.wallet()?.address())
+            .balanceOf(self.wallet()?.address())
             .call()
             .await?;
         Ok(balance)
@@ -275,21 +302,27 @@ pub trait NadoExecute: NadoQuery {
         amount: u128,
     ) -> Result<Option<TransactionReceipt>> {
         let erc20_client = erc20_client(self, product_id).await?;
-        let tx = erc20_client.mint(self.wallet()?.address(), U256::from(amount));
-        let tx_receipt = tx.send().await?.await?;
+        let pending_tx = erc20_client
+            .mint(self.wallet()?.address(), U256::from(amount))
+            .send()
+            .await?;
+        let receipt = wait_for_transaction_receipt(
+            erc20_client.provider(),
+            *pending_tx.tx_hash(),
+            ETHERS_DEFAULT_PENDING_TX_RETRIES,
+        )
+        .await?;
         println!("minted: {amount} of product id: {product_id}");
-        Ok(tx_receipt)
+        Ok(receipt)
     }
 
-    fn endpoint(&self) -> Result<Endpoint<NadoProvider>> {
-        let provider = provider_with_signer(self)?;
-        let endpoint = Endpoint::new(self.endpoint_addr(), provider);
-        Ok(endpoint)
+    fn endpoint(&self) -> Result<endpoint::EndpointInstance<NadoProvider>> {
+        let provider = signer_provider_from_signer_sync(&self.node_url(), self.wallet()?.clone())?;
+        Ok(endpoint::Endpoint::new(self.endpoint_addr(), provider))
     }
 
-    fn querier(&self) -> Result<Querier<NadoProvider>> {
-        let provider = provider_with_signer(self)?;
-        let endpoint = Querier::new(self.querier_addr(), provider);
-        Ok(endpoint)
+    fn querier(&self) -> Result<Querier::QuerierInstance<NadoProvider>> {
+        let provider = signer_provider_from_signer_sync(&self.node_url(), self.wallet()?.clone())?;
+        Ok(Querier::new(self.querier_addr(), provider))
     }
 }

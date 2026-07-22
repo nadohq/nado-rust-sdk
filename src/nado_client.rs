@@ -1,8 +1,7 @@
+use alloy::rpc::types::TransactionReceipt;
+use alloy::signers::local::PrivateKeySigner;
+use alloy_primitives::{Address, U256};
 use async_trait::async_trait;
-use ethers::core::k256::ecdsa::SigningKey;
-use ethers::types::{H160, U256};
-use ethers_core::types::TransactionReceipt;
-use ethers_signers::Wallet;
 use eyre::eyre;
 use eyre::Result;
 use serde::de::DeserializeOwned;
@@ -17,11 +16,13 @@ use crate::builders::execute::slow_mode::SubmitSlowModeTxParams;
 use crate::eip712_structs::to_bytes12;
 use crate::engine::{ExecuteResponse, QueryV2};
 use crate::prelude::*;
-use crate::provider::NadoProvider;
+use crate::provider::{
+    signer_provider_from_signer_sync, wait_for_transaction_receipt, NadoProvider,
+};
 use crate::utils::client_error::none_error;
-use crate::utils::constants::SLOW_MODE_FEE;
+use crate::utils::constants::{ETHERS_DEFAULT_PENDING_TX_RETRIES, SLOW_MODE_FEE};
 use crate::utils::deployment::Deployment;
-use crate::utils::deposit::{deposit_collateral, provider_with_signer};
+use crate::utils::deposit::deposit_collateral;
 use crate::utils::rest::RestClient;
 use crate::utils::signer::wallet_with_chain_id;
 use crate::{engine, indexer, trigger};
@@ -36,7 +37,7 @@ pub struct NadoClient {
     pub archive_url: String,
     pub trigger_url: String,
     pub subaccount_name_bytes: Option<[u8; 12]>,
-    pub wallet: Option<Wallet<SigningKey>>,
+    pub wallet: Option<PrivateKeySigner>,
     pub chain_id: Option<U256>,
     pub custom_node_url: Option<String>,
 }
@@ -85,12 +86,11 @@ impl NadoClient {
         }
     }
 
-    pub async fn withdraw_pool(&self) -> Result<WithdrawPool<NadoProvider>> {
-        let provider = provider_with_signer(self)?;
+    pub async fn withdraw_pool(&self) -> Result<WithdrawPool::WithdrawPoolInstance<NadoProvider>> {
+        let provider = signer_provider_from_signer_sync(&self.node_url(), self.wallet()?.clone())?;
         let clearinghouse = Clearinghouse::new(self.deployment.clearinghouse, provider.clone());
-        let withdraw_pool_address = clearinghouse.get_withdraw_pool().call().await?;
-        let withdraw_pool = WithdrawPool::new(withdraw_pool_address, provider);
-        Ok(withdraw_pool)
+        let withdraw_pool_address = clearinghouse.getWithdrawPool().call().await?;
+        Ok(WithdrawPool::new(withdraw_pool_address, provider))
     }
 }
 
@@ -113,7 +113,7 @@ impl NadoBase for NadoClient {
             ..self.clone()
         }
     }
-    fn wallet(&self) -> Result<&Wallet<SigningKey>> {
+    fn wallet(&self) -> Result<&PrivateKeySigner> {
         self.wallet.as_ref().ok_or(none_error("wallet"))
     }
 
@@ -127,11 +127,11 @@ impl NadoBase for NadoClient {
             .unwrap_or(self.deployment.node_url.clone())
     }
 
-    fn endpoint_addr(&self) -> H160 {
+    fn endpoint_addr(&self) -> Address {
         self.deployment.endpoint
     }
 
-    fn querier_addr(&self) -> H160 {
+    fn querier_addr(&self) -> Address {
         self.deployment.querier
     }
 
@@ -186,12 +186,18 @@ impl NadoExecute for NadoClient {
             }
         }
         let endpoint = self.endpoint()?;
-        let mut tx = endpoint.submit_slow_mode_transaction(params.tx);
+        let mut call = endpoint.submitSlowModeTransaction(params.tx);
         if let Some(gas_price) = params.gas_price {
-            tx = tx.gas_price(gas_price)
+            call = call.gas_price(gas_price);
         }
-        let tx_receipt = tx.send().await?.log_msg("pending tx").await?;
-        Ok(tx_receipt)
+        let pending_tx = call.send().await?;
+        println!("pending tx: {:?}", pending_tx.tx_hash());
+        wait_for_transaction_receipt(
+            endpoint.provider(),
+            *pending_tx.tx_hash(),
+            ETHERS_DEFAULT_PENDING_TX_RETRIES,
+        )
+        .await
     }
 
     async fn deposit_collateral(

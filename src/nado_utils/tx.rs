@@ -1,14 +1,14 @@
 use std::fmt::Debug;
 
-use ethers::abi::AbiEncode;
-use ethers::prelude::*;
-use ethers::types::transaction::eip712::Eip712;
-use ethers_core::types::transaction::eip712::EIP712Domain;
-use ethers_core::utils::keccak256;
+use alloy::sol_types::SolValue;
+use alloy_primitives::{Address, Bytes, U256};
+use alloy_sol_types::Eip712Domain as AlloyEip712Domain;
+use ethers_core::types::{H160, U256 as EthersU256};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 use crate::bindings::endpoint;
+use crate::eip712_alloy::NadoEip712;
 
 #[derive(
     Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq,
@@ -50,6 +50,8 @@ pub enum TxType {
     UpdateBuilder = 30,
     ClaimBuilderFee = 31,
     WithdrawCollateralV2 = 32,
+    ForceRebalanceNlpPool = 33,
+    NlpProfitShare = 34,
 }
 
 impl TxType {
@@ -88,33 +90,82 @@ impl TxType {
             30 => Self::UpdateBuilder,
             31 => Self::ClaimBuilderFee,
             32 => Self::WithdrawCollateralV2,
+            33 => Self::ForceRebalanceNlpPool,
+            34 => Self::NlpProfitShare,
             _ => panic!("Invalid TxType"),
         }
     }
 }
 
-pub fn get_eip712_digest<T: Eip712 + Send + Sync + Debug>(
-    payload: &T,
-    domain: &EIP712Domain,
-) -> H256 {
-    let domain_separator = domain.separator();
-    let struct_hash = payload.struct_hash().unwrap();
-    let digest_input = [&[0x19, 0x01], &domain_separator[..], &struct_hash[..]].concat();
-    H256::from(keccak256(digest_input))
-}
+#[derive(Clone, Debug)]
+pub struct EIP712Domain(AlloyEip712Domain);
 
-pub fn domain(chain_id: U256, verifying_contract: H160) -> EIP712Domain {
-    EIP712Domain {
-        name: Some("Nado".to_string()),
-        version: Some("0.0.1".to_string()),
-        chain_id: Some(chain_id),
-        verifying_contract: Some(verifying_contract),
-        salt: None,
+impl EIP712Domain {
+    pub fn separator(&self) -> [u8; 32] {
+        self.0.separator().0
+    }
+
+    pub(crate) fn as_alloy(&self) -> &AlloyEip712Domain {
+        &self.0
     }
 }
 
+pub fn get_eip712_digest<T: NadoEip712 + Send + Sync + Debug>(
+    payload: &T,
+    domain: &EIP712Domain,
+) -> [u8; 32] {
+    payload.alloy_signing_hash(domain.as_alloy())
+}
+
+pub trait IntoAlloyU256 {
+    fn into_alloy_u256(self) -> U256;
+}
+
+impl IntoAlloyU256 for U256 {
+    fn into_alloy_u256(self) -> U256 {
+        self
+    }
+}
+
+impl IntoAlloyU256 for EthersU256 {
+    fn into_alloy_u256(self) -> U256 {
+        let mut bytes = [0u8; 32];
+        self.to_big_endian(&mut bytes);
+        U256::from_be_bytes(bytes)
+    }
+}
+
+pub trait IntoAlloyAddress {
+    fn into_alloy_address(self) -> Address;
+}
+
+impl IntoAlloyAddress for Address {
+    fn into_alloy_address(self) -> Address {
+        self
+    }
+}
+
+impl IntoAlloyAddress for H160 {
+    fn into_alloy_address(self) -> Address {
+        Address::from_slice(self.as_bytes())
+    }
+}
+
+pub fn domain(
+    chain_id: impl IntoAlloyU256,
+    verifying_contract: impl IntoAlloyAddress,
+) -> EIP712Domain {
+    EIP712Domain(AlloyEip712Domain {
+        name: Some("Nado".into()),
+        version: Some("0.0.1".into()),
+        chain_id: Some(chain_id.into_alloy_u256()),
+        verifying_contract: Some(verifying_contract.into_alloy_address()),
+        salt: None,
+    })
+}
+
 pub fn domain2(chain_id: u64, verifying_contract: [u8; 20]) -> EIP712Domain {
-    domain(U256::from(chain_id), verifying_contract.into())
+    domain(U256::from(chain_id), Address::from(verifying_contract))
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -154,6 +205,8 @@ pub enum NadoTx {
     CloseIsolatedSubaccount(endpoint::CloseIsolatedSubaccount),
     UpdateBuilder(endpoint::UpdateBuilder),
     ClaimBuilderFee(endpoint::ClaimBuilderFee),
+    ForceRebalanceNlpPool(endpoint::ForceRebalanceNlpPool),
+    NlpProfitShare(endpoint::NlpProfitShare),
     Other,
 }
 
@@ -191,6 +244,8 @@ impl NadoTx {
             NadoTx::CloseIsolatedSubaccount(_) => TxType::CloseIsolatedSubaccount,
             NadoTx::UpdateBuilder(_) => TxType::UpdateBuilder,
             NadoTx::ClaimBuilderFee(_) => TxType::ClaimBuilderFee,
+            NadoTx::ForceRebalanceNlpPool(_) => TxType::ForceRebalanceNlpPool,
+            NadoTx::NlpProfitShare(_) => TxType::NlpProfitShare,
             NadoTx::Other => panic!("Other is not a valid tx type"),
         }
     }
@@ -207,15 +262,15 @@ pub fn assert_product(
     Bytes::from(
         [
             vec![TxType::AssertProduct as u8],
-            endpoint::AssertProductReturn(endpoint::AssertProduct {
+            (endpoint::AssertProduct {
                 product_id,
                 is_spot,
                 quote_id,
                 size_increment,
                 min_size,
-                others_hash,
-            })
-            .encode(),
+                others_hash: others_hash.into(),
+            },)
+                .abi_encode_params(),
         ]
         .concat(),
     )

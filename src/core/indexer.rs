@@ -10,8 +10,8 @@ use crate::indexer::{
     AccountSnapshotsResponse, CandlesticksResponse, ContractsParams, EventsResponse,
     FoundationTakerRewardsResponse, FundingRateResponse, InterestAndFundingTicksResponse,
     IsolatedSubaccountsResponse, LeaderboardResponse, LinkedSignerRateLimitResponse,
-    LinkedSignerResponse, MakerStatisticsResponse, MarketSnapshotsResponse, MatchesResponse,
-    NlpFundingPaymentsResponse, NlpInterestPaymentsResponse, NlpSnapshotsResponse,
+    LinkedSignerResponse, MakerStatisticsResponse, MarketNetFeesResponse, MarketSnapshotsResponse,
+    MatchesResponse, NlpFundingPaymentsResponse, NlpInterestPaymentsResponse, NlpSnapshotsResponse,
     OraclePriceResponse, OrdersResponse, PerpContractResponse, PerpPriceResponse, ProductSnapshot,
     ProductsResponse, Query, QueryV2, QuotePriceResponse, SubaccountsResponse, TickerResponse,
     TickersParams, TradesResponse,
@@ -161,6 +161,13 @@ pub trait NadoIndexer: NadoBase {
         market_snapshots_query: Query,
     ) -> Result<MarketSnapshotsResponse> {
         self.query(market_snapshots_query).await
+    }
+
+    async fn get_market_net_fees(
+        &self,
+        market_net_fees_query: Query,
+    ) -> Result<MarketNetFeesResponse> {
+        self.query(market_net_fees_query).await
     }
 
     async fn get_nlp_snapshots(&self, nlp_snapshots_query: Query) -> Result<NlpSnapshotsResponse> {

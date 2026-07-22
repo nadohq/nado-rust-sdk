@@ -1,6 +1,6 @@
-use crate::bindings::endpoint::endpoint;
+use crate::bindings::endpoint;
 use crate::tx::TxType;
-use ethers::types::Bytes;
+use alloy_primitives::Bytes;
 use eyre::Result;
 use std::time::Duration;
 
@@ -8,8 +8,8 @@ use crate::core::execute::NadoExecute;
 use crate::utils::client_error::none_error;
 use crate::utils::constants::DEFAULT_SLOW_MODE_SLEEP_SECS;
 use crate::{build_and_call, fields_to_vars, nado_builder};
-use ethers::abi::AbiEncode;
-use ethers::types::TransactionReceipt;
+use alloy::rpc::types::TransactionReceipt;
+use alloy::sol_types::SolValue;
 
 nado_builder!(
     SubmitSlowModeTxBuilder,
@@ -73,21 +73,16 @@ pub struct SubmitSlowModeTxParams {
 }
 
 fn withdraw_collateral_bytes(withdraw_collateral: endpoint::WithdrawCollateral) -> Bytes {
-    let withdraw_tx_bytes = AbiEncode::encode(endpoint::UnsignedWithdrawCollateralReturn(
-        withdraw_collateral,
-    ));
+    let withdraw_tx_bytes = (withdraw_collateral,).abi_encode_params();
 
     Bytes::from([vec![TxType::WithdrawCollateral as u8], withdraw_tx_bytes].concat())
 }
 
 fn liquidate_subaccount_bytes(liquidate_subaccount: endpoint::LiquidateSubaccount) -> Bytes {
-    let liquidate_subaccount_return =
-        endpoint::UnsignedLiquidateSubaccountReturn(liquidate_subaccount);
-
     Bytes::from(
         [
             vec![TxType::LiquidateSubaccount as u8],
-            AbiEncode::encode(liquidate_subaccount_return),
+            (liquidate_subaccount,).abi_encode_params(),
         ]
         .concat(),
     )

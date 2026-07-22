@@ -1,4 +1,4 @@
-use ethers::types::H160;
+use alloy_primitives::Address;
 use eyre::Result;
 
 use crate::bindings::endpoint;
@@ -15,7 +15,7 @@ nado_builder!(
     product_id: u32,
     nonce: u64,
     linked_sender: [u8; 32],
-    send_to: H160,
+    send_to: Address,
     appendix: u128,
     spot_leverage: bool;
 
@@ -36,7 +36,7 @@ nado_builder!(
         let tx = self.build().await?;
         Ok(
             endpoint::WithdrawCollateral {
-                sender: tx.sender,
+                sender: tx.sender.into(),
                 amount: tx.amount,
                 nonce: tx.nonce,
                 product_id: tx.productId,
@@ -48,11 +48,11 @@ nado_builder!(
         let tx = self.build_v2().await?;
         Ok(
             endpoint::WithdrawCollateralV2 {
-                sender: tx.sender,
+                sender: tx.sender.into(),
                 amount: tx.amount,
                 nonce: tx.nonce,
                 product_id: tx.productId,
-                send_to: H160::from_slice(&tx.sendTo),
+                send_to: alloy::primitives::Address::from(tx.sendTo),
                 appendix: tx.appendix,
             }
         )
@@ -61,7 +61,7 @@ nado_builder!(
     pub async fn build(&self) -> Result<eip712_structs::WithdrawCollateral> {
         let default_sender = self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);
-        let address = H160::from_slice(&sender[0..20]).0;
+        let address = Address::from_slice(&sender[0..20]).into();
         let nonce = self
             .nonce
             .unwrap_or(self.nado.next_tx_nonce(address).await?);
@@ -78,12 +78,12 @@ nado_builder!(
     pub async fn build_v2(&self) -> Result<eip712_structs::WithdrawCollateralV2> {
         let default_sender = self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);
-        let address = H160::from_slice(&sender[0..20]).0;
+        let address = Address::from_slice(&sender[0..20]).into();
         let nonce = self
             .nonce
             .unwrap_or(self.nado.next_tx_nonce(address).await?);
         let appendix = self.appendix.unwrap_or(0);
-        let send_to = self.send_to.unwrap_or_else(H160::zero);
+        let send_to = self.send_to.unwrap_or_default();
         fields_to_vars!(self, amount, product_id);
 
         Ok(eip712_structs::WithdrawCollateralV2 {
@@ -91,7 +91,7 @@ nado_builder!(
             amount,
             nonce,
             productId: product_id,
-            sendTo: send_to.0,
+            sendTo: send_to.into(),
             appendix,
         })
     }
