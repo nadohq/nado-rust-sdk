@@ -1,13 +1,11 @@
 use std::fmt::Debug;
 
+use alloy::signers::local::PrivateKeySigner;
+use alloy_primitives::{Address, U256};
 use async_trait::async_trait;
-use ethers::prelude::*;
-use ethers_core::k256::ecdsa::SigningKey;
-use ethers_core::types::transaction::eip712::Eip712;
-use ethers_signers::Signer;
-use ethers_signers::Wallet;
 use eyre::Result;
 
+use crate::eip712_alloy::NadoEip712;
 use crate::eip712_structs::{concat_to_bytes32, to_bytes12};
 
 use crate::utils::client_utils::validate_subaccount_name;
@@ -24,7 +22,7 @@ pub trait NadoBase: Clone + Sync {
 
     fn with_subaccount_name_bytes(&self, subaccount_name: [u8; 12]) -> Self;
 
-    fn wallet(&self) -> Result<&Wallet<SigningKey>>;
+    fn wallet(&self) -> Result<&PrivateKeySigner>;
 
     fn address(&self) -> Result<[u8; 20]> {
         Ok(self.wallet()?.address().into())
@@ -42,7 +40,7 @@ pub trait NadoBase: Clone + Sync {
         NadoSigner::new(self)
     }
 
-    fn endpoint_signature<T: Eip712 + Send + Sync + Debug>(
+    fn endpoint_signature<T: NadoEip712 + Send + Sync + Debug>(
         &self,
         endpoint_tx: &T,
     ) -> Result<Vec<u8>> {
@@ -51,9 +49,9 @@ pub trait NadoBase: Clone + Sync {
 
     fn node_url(&self) -> String;
 
-    fn endpoint_addr(&self) -> H160;
+    fn endpoint_addr(&self) -> Address;
 
-    fn querier_addr(&self) -> H160;
+    fn querier_addr(&self) -> Address;
 
     fn chain_id(&self) -> Result<U256>;
 

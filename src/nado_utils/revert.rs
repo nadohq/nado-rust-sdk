@@ -1,15 +1,16 @@
-use ethers_contract::{ContractError, EthError};
-use ethers_providers::Middleware;
+use alloy::contract::Error as ContractError;
+use alloy::sol_types::{Revert, SolError};
 
-pub fn parse_provider_error<M: Middleware>(error: ContractError<M>) -> String {
-    match error {
-        ContractError::Revert(ref data) => {
-            let msg = String::decode_with_selector(data.to_vec().as_slice()).unwrap_or_else(|| {
-                println!("failed to decode revert data: {error:?}");
-                String::default()
-            });
-            format!("execution reverted: {msg}")
+/// Alloy equivalent of the old ethers `parse_provider_error`: pulls the `Error(string)` revert
+/// reason out of an alloy contract error and formats it as `execution reverted: <reason>`,
+/// matching the ethers output so revert-string consumers (e.g. the sequencer's
+/// `decode_gas_limit_revert` `": G ..."` gas protocol) keep working unchanged.
+pub fn parse_alloy_error(error: &ContractError) -> String {
+    if let Some(data) = error.as_revert_data() {
+        if let Ok(revert) = Revert::abi_decode(data.as_ref()) {
+            return format!("execution reverted: {}", revert.reason);
         }
-        _ => error.to_string(),
+        return "execution reverted: ".to_string();
     }
+    error.to_string()
 }

@@ -8,10 +8,8 @@ use crate::serialize_utils::{
     deserialize_vec_bytes32, serialize_bytes20, serialize_bytes32, serialize_i128, serialize_u128,
     serialize_u64, serialize_vec_bytes32,
 };
-use ethers::abi::{encode, Token};
-use ethers::prelude::*;
-use ethers::types::transaction::eip712::{EIP712Domain, Eip712 as Eip712Trait, Eip712Error};
-use ethers_core::utils::keccak256;
+use alloy_primitives::Address;
+use alloy_primitives::Bytes;
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 use std::cmp::{max, min};
@@ -19,18 +17,8 @@ use std::fmt;
 use std::fmt::Debug;
 
 #[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-    Eip712,
-    EthAbiType,
-    Default,
+    Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone, Default,
 )]
-#[eip712()]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
 pub struct Order {
@@ -121,7 +109,7 @@ impl Order {
 
     pub fn to_offchain_exchange_binding(&self) -> offchain_exchange::Order {
         offchain_exchange::Order {
-            sender: self.sender,
+            sender: self.sender.into(),
             price_x18: self.priceX18,
             amount: self.amount,
             expiration: self.expiration,
@@ -132,7 +120,7 @@ impl Order {
 
     pub fn to_binding(&self) -> endpoint::Order {
         endpoint::Order {
-            sender: self.sender,
+            sender: self.sender.into(),
             price_x18: self.priceX18,
             amount: self.amount,
             expiration: self.expiration,
@@ -160,7 +148,7 @@ impl Order {
 
     pub fn from_binding(order: &endpoint::Order) -> Self {
         Self {
-            sender: order.sender,
+            sender: order.sender.into(),
             priceX18: order.price_x18,
             amount: order.amount,
             expiration: order.expiration,
@@ -255,18 +243,7 @@ impl Order {
     }
 }
 
-#[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-    Eip712,
-    EthAbiType,
-)]
-#[eip712()]
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
 pub struct Cancellation {
@@ -289,9 +266,9 @@ pub struct Cancellation {
 impl Cancellation {
     pub fn to_binding(&self) -> endpoint::Cancellation {
         endpoint::Cancellation {
-            sender: self.sender,
+            sender: self.sender.into(),
             product_ids: self.productIds.clone(),
-            digests: self.digests.clone(),
+            digests: self.digests.clone().into_iter().map(Into::into).collect(),
             nonce: self.nonce,
         }
     }
@@ -308,18 +285,7 @@ impl Cancellation {
     }
 }
 
-#[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-    Eip712,
-    EthAbiType,
-)]
-#[eip712()]
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
 pub struct CancellationProducts {
@@ -336,7 +302,7 @@ pub struct CancellationProducts {
 impl CancellationProducts {
     pub fn to_binding(&self) -> endpoint::CancellationProducts {
         endpoint::CancellationProducts {
-            sender: self.sender,
+            sender: self.sender.into(),
             product_ids: self.productIds.clone(),
             nonce: self.nonce,
         }
@@ -354,18 +320,7 @@ impl CancellationProducts {
     }
 }
 
-#[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-    Eip712,
-    EthAbiType,
-)]
-#[eip712()]
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
 pub struct LinkSigner {
@@ -386,8 +341,8 @@ pub struct LinkSigner {
 impl LinkSigner {
     pub fn to_binding(&self) -> endpoint::LinkSigner {
         endpoint::LinkSigner {
-            sender: self.sender,
-            signer: self.signer,
+            sender: self.sender.into(),
+            signer: self.signer.into(),
             nonce: self.nonce,
         }
     }
@@ -404,18 +359,7 @@ impl LinkSigner {
     }
 }
 
-#[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-    Eip712,
-    EthAbiType,
-)]
-#[eip712()]
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
 pub struct LiquidateSubaccount {
@@ -445,8 +389,8 @@ pub struct LiquidateSubaccount {
 impl LiquidateSubaccount {
     pub fn to_binding(&self) -> endpoint::LiquidateSubaccount {
         endpoint::LiquidateSubaccount {
-            sender: self.sender,
-            liquidatee: self.liquidatee,
+            sender: self.sender.into(),
+            liquidatee: self.liquidatee.into(),
             product_id: self.productId,
             is_encoded_spread: self.isEncodedSpread,
             amount: self.amount,
@@ -455,18 +399,7 @@ impl LiquidateSubaccount {
     }
 }
 
-#[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-    Eip712,
-    EthAbiType,
-)]
-#[eip712()]
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
 pub struct WithdrawCollateral {
@@ -490,7 +423,7 @@ pub struct WithdrawCollateral {
 impl WithdrawCollateral {
     pub fn to_binding(&self) -> endpoint::WithdrawCollateral {
         endpoint::WithdrawCollateral {
-            sender: self.sender,
+            sender: self.sender.into(),
             product_id: self.productId,
             amount: self.amount,
             nonce: self.nonce,
@@ -530,54 +463,17 @@ pub struct WithdrawCollateralV2 {
 impl WithdrawCollateralV2 {
     pub fn to_binding(&self) -> endpoint::WithdrawCollateralV2 {
         endpoint::WithdrawCollateralV2 {
-            sender: self.sender,
+            sender: self.sender.into(),
             product_id: self.productId,
             amount: self.amount,
             nonce: self.nonce,
-            send_to: Address::from_slice(&self.sendTo),
+            send_to: alloy::primitives::Address::from(self.sendTo),
             appendix: self.appendix,
         }
     }
 }
 
-impl Eip712Trait for WithdrawCollateralV2 {
-    type Error = Eip712Error;
-
-    fn domain(&self) -> std::result::Result<EIP712Domain, Self::Error> {
-        Ok(EIP712Domain::default())
-    }
-
-    fn type_hash() -> std::result::Result<[u8; 32], Self::Error> {
-        Ok(keccak256(
-            "WithdrawCollateralV2(bytes32 sender,uint32 productId,uint128 amount,uint64 nonce,address sendTo,uint128 appendix)",
-        ))
-    }
-
-    fn struct_hash(&self) -> std::result::Result<[u8; 32], Self::Error> {
-        Ok(keccak256(encode(&[
-            Token::FixedBytes(Self::type_hash()?.to_vec()),
-            Token::FixedBytes(self.sender.to_vec()),
-            Token::Uint(self.productId.into()),
-            Token::Uint(self.amount.into()),
-            Token::Uint(self.nonce.into()),
-            Token::Address(Address::from_slice(&self.sendTo)),
-            Token::Uint(self.appendix.into()),
-        ])))
-    }
-}
-
-#[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-    Eip712,
-    EthAbiType,
-)]
-#[eip712()]
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
 pub struct MintNlp {
@@ -600,25 +496,14 @@ pub struct MintNlp {
 impl MintNlp {
     pub fn to_binding(&self) -> endpoint::MintNlp {
         endpoint::MintNlp {
-            sender: self.sender,
+            sender: self.sender.into(),
             quote_amount: self.quoteAmount,
             nonce: self.nonce,
         }
     }
 }
 
-#[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-    Eip712,
-    EthAbiType,
-)]
-#[eip712()]
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
 pub struct BurnNlp {
@@ -641,25 +526,14 @@ pub struct BurnNlp {
 impl BurnNlp {
     pub fn to_binding(&self) -> endpoint::BurnNlp {
         endpoint::BurnNlp {
-            sender: self.sender,
+            sender: self.sender.into(),
             nlp_amount: self.nlpAmount,
             nonce: self.nonce,
         }
     }
 }
 
-#[derive(
-    Archive,
-    RkyvDeserialize,
-    RkyvSerialize,
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-    Eip712,
-    EthAbiType,
-)]
-#[eip712()]
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
 #[archive(check_bytes)]
 #[allow(non_snake_case)]
 pub struct TransferQuote {
@@ -687,27 +561,15 @@ pub struct TransferQuote {
 impl TransferQuote {
     pub fn to_binding(&self) -> endpoint::TransferQuote {
         endpoint::TransferQuote {
-            sender: self.sender,
-            recipient: self.recipient,
+            sender: self.sender.into(),
+            recipient: self.recipient.into(),
             amount: self.amount,
             nonce: self.nonce,
         }
     }
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    Eip712,
-    ethers :: contract :: EthAbiType,
-    ethers :: contract :: EthAbiCodec,
-)]
-#[eip712()]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
 #[allow(non_snake_case)]
 pub struct ListTriggerOrders {
     #[serde(
@@ -719,35 +581,47 @@ pub struct ListTriggerOrders {
     pub recvTime: u64,
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    ethers :: contract :: EthAbiType,
-    ethers :: contract :: EthAbiCodec,
-)]
-pub struct SignedListTriggerOrders {
-    pub tx: ListTriggerOrders,
-    pub signature: ethers::core::types::Bytes,
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+#[allow(non_snake_case)]
+pub struct DependencyUpdate {
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub sender: [u8; 32],
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub oldDigest: [u8; 32],
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub newDigest: [u8; 32],
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub nonce: u64,
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    Eip712,
-    ethers :: contract :: EthAbiType,
-    ethers :: contract :: EthAbiCodec,
-)]
-#[eip712()]
+impl DependencyUpdate {
+    pub fn recv_time(&self) -> u64 {
+        self.nonce >> 20
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+pub struct SignedDependencyUpdate {
+    pub tx: DependencyUpdate,
+    pub signature: alloy_primitives::Bytes,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+pub struct SignedListTriggerOrders {
+    pub tx: ListTriggerOrders,
+    pub signature: alloy_primitives::Bytes,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
 #[allow(non_snake_case)]
 pub struct StreamAuthentication {
     #[serde(
@@ -759,19 +633,7 @@ pub struct StreamAuthentication {
     pub expiration: u64,
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    Eip712,
-    ethers :: contract :: EthAbiType,
-    ethers :: contract :: EthAbiCodec,
-)]
-#[eip712()]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
 #[allow(non_snake_case)]
 pub struct NadoAuthentication {
     pub method: String,
@@ -781,19 +643,7 @@ pub struct NadoAuthentication {
     pub nonce: u64,
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    Eip712,
-    ethers :: contract :: EthAbiType,
-    ethers :: contract :: EthAbiCodec,
-)]
-#[eip712()]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
 #[allow(non_snake_case)]
 pub struct LeaderboardAuthentication {
     #[serde(
@@ -806,19 +656,7 @@ pub struct LeaderboardAuthentication {
     pub contestIds: Vec<u32>,
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    Eip712,
-    ethers :: contract :: EthAbiType,
-    ethers :: contract :: EthAbiCodec,
-)]
-#[eip712()]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
 #[allow(non_snake_case)]
 pub struct SocialAuthentication {
     #[serde(
@@ -839,7 +677,7 @@ pub fn to_bytes12(s: &str) -> [u8; 12] {
     out
 }
 
-pub fn to_bytes32(address: H160, name: &str) -> [u8; 32] {
+pub fn to_bytes32(address: Address, name: &str) -> [u8; 32] {
     concat_to_bytes32(address.into(), to_bytes12(name))
 }
 
@@ -850,9 +688,9 @@ pub fn concat_to_bytes32(address: [u8; 20], name: [u8; 12]) -> [u8; 32] {
     ret
 }
 
-pub fn from_bytes32(b: [u8; 32]) -> (H160, String) {
+pub fn from_bytes32(b: [u8; 32]) -> (Address, String) {
     (
-        H160::from_slice(&b[..20]),
+        Address::from_slice(&b[..20]),
         from_bytes12(b[20..].try_into().unwrap()),
     )
 }
@@ -861,14 +699,14 @@ pub fn from_bytes12(b: [u8; 12]) -> String {
     String::from_utf8(b.to_vec()).unwrap()
 }
 
-pub fn from_bytes32_safe(b: [u8; 32]) -> (H160, String) {
+pub fn from_bytes32_safe(b: [u8; 32]) -> (Address, String) {
     let subaccount_name_bytes = b[20..].try_into().unwrap();
     let subaccount_name = if is_isolated_subaccount(b) {
         format!("0x{}", hex::encode(subaccount_name_bytes))
     } else {
         from_bytes12_safe(subaccount_name_bytes)
     };
-    (H160::from_slice(&b[..20]), subaccount_name)
+    (Address::from_slice(&b[..20]), subaccount_name)
 }
 
 pub fn from_bytes12_safe(b: [u8; 12]) -> String {

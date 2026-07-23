@@ -1,6 +1,6 @@
 use crate::core::execute::NadoExecute;
 use crate::{build_and_call, fields_to_vars, nado_builder};
-use ethers::types::TransactionReceipt;
+use alloy::rpc::types::TransactionReceipt;
 use eyre::Result;
 use std::time::Duration;
 

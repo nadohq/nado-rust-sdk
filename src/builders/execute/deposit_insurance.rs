@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-use ethers::abi::AbiEncode;
-use ethers::types::Bytes;
-use ethers::types::TransactionReceipt;
+use alloy::rpc::types::TransactionReceipt;
+use alloy::sol_types::SolValue;
+use alloy_primitives::Bytes;
 use eyre::Result;
 
-use crate::bindings::endpoint::endpoint;
+use crate::bindings::endpoint;
 use crate::math::to_i128_x18;
 use crate::math::ONE_X6;
 use crate::tx::TxType;
@@ -88,8 +88,6 @@ nado_builder!(
 
 // TODO: this only deposits into cross group
 pub fn deposit_insurance_bytes(amount: u128) -> Bytes {
-    let tx_bytes = AbiEncode::encode(endpoint::UnsignedDepositInsuranceReturn(
-        endpoint::DepositInsurance { amount },
-    ));
+    let tx_bytes = (endpoint::DepositInsurance { amount },).abi_encode_params();
     Bytes::from([vec![TxType::DepositInsurance as u8], tx_bytes].concat())
 }

@@ -4,6 +4,7 @@ pub mod events;
 pub mod historical_orders;
 pub mod interest_and_funding;
 pub mod leaderboard;
+pub mod market_net_fees;
 pub mod market_snapshots;
 pub mod matches;
 pub mod matches_and_liquidations;

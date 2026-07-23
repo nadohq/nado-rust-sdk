@@ -11,8 +11,8 @@ use crate::serialize_utils::{
     serialize_vec_u8, WrappedBytes32, WrappedI128, WrappedU32, WrappedU64,
 };
 use crate::tx::{NadoTx, TxType};
-use ethers::types::H160;
-use ethers_core::types::Bytes;
+use alloy_primitives::Address;
+use alloy_primitives::Bytes;
 use eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -56,6 +56,13 @@ pub enum Query {
         product_id: WrappedU32,
         granularity: WrappedU32,
         max_time: Option<WrappedU64>,
+        limit: Option<WrappedU32>,
+    },
+
+    FundingRateHistory {
+        product_id: WrappedU32,
+        start_time: Option<WrappedU64>,
+        end_time: Option<WrappedU64>,
         limit: Option<WrappedU32>,
     },
 
@@ -120,9 +127,10 @@ pub enum Query {
     },
 
     Subaccounts {
-        address: Option<H160>,
+        address: Option<Address>,
         start: Option<WrappedU64>,
         limit: Option<WrappedU64>,
+        dda: Option<Address>,
     },
 
     Price {
@@ -166,6 +174,12 @@ pub enum Query {
     MarketSnapshots {
         interval: Interval,
         product_ids: Option<Vec<WrappedU32>>,
+    },
+
+    MarketNetFees {
+        product_ids: Vec<WrappedU32>,
+        start_time: WrappedU64,
+        end_time: WrappedU64,
     },
 
     EdgeMarketSnapshots {
@@ -248,7 +262,7 @@ pub enum Query {
     },
 
     ListSocialAccounts {
-        address: H160,
+        address: Address,
     },
 
     RevokeSocialAccount {
@@ -287,16 +301,42 @@ pub enum Query {
     },
 
     InkAirdrop {
-        address: H160,
+        address: Address,
     },
 
     PrivateAlphaChoice {
-        address: H160,
+        address: Address,
     },
 
     NadoPoints {
-        address: H160,
+        address: Address,
     },
+
+    #[serde(rename = "nado_xpoints")]
+    NadoXPoints {
+        address: Address,
+    },
+
+    CashIncentives {
+        wallet_address: Address,
+    },
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct HistoricalFundingRate {
+    pub product_id: u32,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub timestamp: u64,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub funding_rate_x18: i128,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct FundingRateHistoryResponse {
+    pub funding_rates: Vec<HistoricalFundingRate>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -608,7 +648,7 @@ pub struct Signature {
     )]
     pub digest: [u8; 32],
     pub signature: Bytes,
-    pub signer: H160,
+    pub signer: Address,
     pub is_linked: bool,
 }
 
@@ -1065,7 +1105,7 @@ pub struct MakerStatistic {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MakerInfo {
-    pub address: H160,
+    pub address: Address,
     pub data: Vec<MakerStatistic>,
 }
 
@@ -1133,6 +1173,18 @@ pub struct IsolatedSubaccountsResponse {
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct MarketSnapshotsResponse {
     pub snapshots: Vec<MarketSnapshotData>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct MarketNetFeesResponse {
+    pub product_ids: Vec<u32>,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub start_time: u64,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub end_time: u64,
+    pub taker_fees: HashMap<i32, WrappedI128>,
+    pub maker_fees: HashMap<i32, WrappedI128>,
+    pub net_fees: HashMap<i32, WrappedI128>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -1311,6 +1363,27 @@ pub struct MarketHours {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PriceFeed {
+    pub oracle: PriceFeedLeg,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spot_index: Option<PriceFeedLeg>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PriceFeedLeg {
+    pub primary: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weekend: Option<WeekendPricing>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum WeekendPricing {
+    EmaNadoOrderbook,
+    MedianExchanges,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SymbolsResponseV2 {
     #[serde(rename = "type")]
     pub product_type: String,
@@ -1363,6 +1436,8 @@ pub struct SymbolsResponseV2 {
     pub taker_multiplier: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maker_multiplier: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub price_feed: Option<PriceFeed>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -1719,4 +1794,128 @@ pub struct NadoPointsAllTime {
 pub struct NadoPointsResponse {
     pub points_per_epoch: Vec<NadoPointsEpochData>,
     pub all_time_points: NadoPointsAllTime,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NadoXPointsQuestData {
+    pub quest_type: String,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub points: i128,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NadoXPointsEpochData {
+    pub epoch: u32,
+    pub description: String,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub start_time: u64,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub end_time: u64,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub total_points: i128,
+    pub quests: Vec<NadoXPointsQuestData>,
+    pub rank: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NadoXPointsAllTime {
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub total_points: i128,
+    pub quests: Vec<NadoXPointsQuestData>,
+    pub rank: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NadoXPointsResponse {
+    pub points_per_epoch: Vec<NadoXPointsEpochData>,
+    pub all_time_points: NadoXPointsAllTime,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CashIncentivesEventMetadata {
+    pub event_id: u64,
+    pub description: String,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub epoch_start: u64,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub epoch_end: u64,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub max_volume: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub max_reward: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub min_volume: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub min_reward: i128,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CashIncentivesPlatformStats {
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub platform_volume: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub unlocked_reward: i128,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CashIncentivesWalletSummary {
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub total_reward: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub claimable_reward: i128,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CashIncentivesEventWallet {
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub reward: i128,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CashIncentivesEventData {
+    pub metadata: CashIncentivesEventMetadata,
+    pub platform: CashIncentivesPlatformStats,
+    pub wallet: CashIncentivesEventWallet,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CashIncentivesResponse {
+    pub events: Vec<CashIncentivesEventData>,
+    pub wallet_summary: CashIncentivesWalletSummary,
 }

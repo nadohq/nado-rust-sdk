@@ -60,7 +60,7 @@ Add the following line to your Cargo.toml file:
 
 ```toml
 [dependencies]
-nado_sdk = "0.3.9"
+nado_sdk = "1.0.0"
 ```
 
 ## Usage

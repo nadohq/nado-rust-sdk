@@ -16,6 +16,7 @@ use crate::builders::indexer::events::EventsBuilder;
 use crate::builders::indexer::historical_orders::HistoricalOrdersBuilder;
 use crate::builders::indexer::interest_and_funding::InterestAndFundingTicksBuilder;
 use crate::builders::indexer::leaderboard::LeaderboardBuilder;
+use crate::builders::indexer::market_net_fees::MarketNetFeesBuilder;
 use crate::builders::indexer::market_snapshots::MarketSnapshotsBuilder;
 use crate::builders::indexer::matches::MatchesBuilder;
 use crate::builders::indexer::matches_and_liquidations::MatchesAndLiquidationsBuilder;
@@ -102,6 +103,7 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
         NlpInterestPaymentsBuilder
     );
     get_nado_builder!(get_market_snapshots_builder, MarketSnapshotsBuilder);
+    get_nado_builder!(get_market_net_fees_builder, MarketNetFeesBuilder);
     get_nado_builder!(get_nlp_snapshots_builder, NlpSnapshotsBuilder);
     get_nado_builder!(get_trades_builder, TradesParamsBuilder);
     get_nado_builder!(fee_calculator, FeeCalculator);

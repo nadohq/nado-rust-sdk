@@ -1,6 +1,6 @@
 use crate::core::execute::NadoExecute;
 use crate::{fields_to_vars, nado_builder};
-use ethers::types::H160;
+use alloy_primitives::Address;
 use eyre::Result;
 
 use crate::eip712_structs::MintNlp;
@@ -24,7 +24,7 @@ nado_builder!(
     pub async fn build(&self) -> Result<MintNlp> {
         let default_sender = self.nado.subaccount()?;
         let sender = self.linked_sender.unwrap_or(default_sender);
-        let address = H160::from_slice(&sender[0..20]).0;
+        let address = Address::from_slice(&sender[0..20]).into();
         let nonce = self
             .nonce
             .unwrap_or(self.nado.next_tx_nonce(address).await?);

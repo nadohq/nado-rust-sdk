@@ -1,15 +1,14 @@
 use core::fmt::Debug;
 use std::str::FromStr;
 
-use ethers::prelude::k256::ecdsa::SigningKey;
-use ethers::prelude::{H160, U256};
-use ethers::types::Signature;
-use ethers_core::types::transaction::eip712::{EIP712Domain, Eip712};
-use ethers_signers::Signer;
-use ethers_signers::Wallet;
+use alloy::signers::local::PrivateKeySigner;
+use alloy::signers::{Signer, SignerSync};
+use alloy_primitives::Signature;
+use alloy_primitives::{Address, B256, U256};
 use eyre::Result;
 
-use crate::tx::{domain, get_eip712_digest};
+use crate::eip712_alloy::NadoEip712;
+use crate::tx::{domain, get_eip712_digest, EIP712Domain};
 
 use crate::core::base::NadoBase;
 
@@ -22,13 +21,12 @@ impl<'a, V: NadoBase> NadoSigner<'a, V> {
         Self { nado }
     }
 
-    pub fn endpoint_digest<T: Eip712 + Send + Sync + Debug>(&self, tx: &T) -> Result<[u8; 32]> {
+    pub fn endpoint_digest<T: NadoEip712 + Send + Sync + Debug>(&self, tx: &T) -> Result<[u8; 32]> {
         let domain = self.endpoint_domain()?;
-        let digest: [u8; 32] = get_eip712_digest(tx, &domain).into();
-        Ok(digest)
+        Ok(get_eip712_digest(tx, &domain))
     }
 
-    pub fn endpoint_signature<T: Eip712 + Send + Sync + Debug>(
+    pub fn endpoint_signature<T: NadoEip712 + Send + Sync + Debug>(
         &self,
         endpoint_tx: &T,
     ) -> Result<Vec<u8>> {
@@ -40,7 +38,7 @@ impl<'a, V: NadoBase> NadoSigner<'a, V> {
         Ok(signature)
     }
 
-    pub fn endpoint_signature_concat<T: Eip712 + Send + Sync + Debug>(
+    pub fn endpoint_signature_concat<T: NadoEip712 + Send + Sync + Debug>(
         &self,
         endpoint_tx: &T,
     ) -> Result<Vec<u8>> {
@@ -49,16 +47,16 @@ impl<'a, V: NadoBase> NadoSigner<'a, V> {
         Ok(ret)
     }
 
-    fn endpoint_signature_base<T: Eip712 + Send + Sync + Debug>(
+    fn endpoint_signature_base<T: NadoEip712 + Send + Sync + Debug>(
         &self,
         endpoint_tx: &T,
     ) -> Result<Vec<u8>> {
         let domain = self.endpoint_domain()?;
         let signature = self.sign_with_domain(endpoint_tx, domain)?;
-        Ok(signature.to_vec())
+        Ok(signature.as_bytes().to_vec())
     }
 
-    pub fn order_signature<T: Eip712 + Send + Sync + Debug>(
+    pub fn order_signature<T: NadoEip712 + Send + Sync + Debug>(
         &self,
         product_id: u32,
         order_tx: &T,
@@ -71,7 +69,7 @@ impl<'a, V: NadoBase> NadoSigner<'a, V> {
         Ok(signature)
     }
 
-    pub fn order_signature_concat<T: Eip712 + Send + Sync + Debug>(
+    pub fn order_signature_concat<T: NadoEip712 + Send + Sync + Debug>(
         &self,
         product_id: u32,
         order_tx: &T,
@@ -81,23 +79,23 @@ impl<'a, V: NadoBase> NadoSigner<'a, V> {
         Ok(ret)
     }
 
-    fn order_signature_base<T: Eip712 + Send + Sync + Debug>(
+    fn order_signature_base<T: NadoEip712 + Send + Sync + Debug>(
         &self,
         product_id: u32,
         order_tx: &T,
     ) -> Result<Vec<u8>> {
         let domain = self.order_domain(product_id)?;
         let signature = self.sign_with_domain(order_tx, domain)?;
-        Ok(signature.to_vec())
+        Ok(signature.as_bytes().to_vec())
     }
 
-    fn sign_with_domain<T: Eip712 + Send + Sync + Debug>(
+    fn sign_with_domain<T: NadoEip712 + Send + Sync + Debug>(
         &self,
         payload: &T,
         domain: EIP712Domain,
     ) -> Result<Signature> {
         let encoded = get_eip712_digest(payload, &domain);
-        Ok(self.nado.wallet()?.sign_hash(encoded)?)
+        Ok(self.nado.wallet()?.sign_hash_sync(&B256::from(encoded))?)
     }
 
     fn endpoint_domain(&self) -> Result<EIP712Domain> {
@@ -105,15 +103,38 @@ impl<'a, V: NadoBase> NadoSigner<'a, V> {
     }
 
     pub fn order_domain(&self, product_id: u32) -> Result<EIP712Domain> {
-        self.domain(H160::from_low_u64_be(product_id as u64))
+        self.domain(Address::left_padding_from(
+            &(product_id as u64).to_be_bytes(),
+        ))
     }
 
-    fn domain(&self, verifying_contract: H160) -> Result<EIP712Domain> {
+    fn domain(&self, verifying_contract: Address) -> Result<EIP712Domain> {
         Ok(domain(self.nado.chain_id()?, verifying_contract))
     }
 }
 
-pub fn wallet_with_chain_id(private_key: &str, chain_id: U256) -> Result<Wallet<SigningKey>> {
-    let wallet = Wallet::from_str(private_key)?;
-    Ok(wallet.with_chain_id(chain_id.as_u64()))
+pub fn wallet_with_chain_id(private_key: &str, chain_id: U256) -> Result<PrivateKeySigner> {
+    let wallet = PrivateKeySigner::from_str(private_key)?;
+    Ok(wallet.with_chain_id(Some(chain_id.to::<u64>())))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn wallet_with_chain_id_accepts_prefixed_and_unprefixed_keys() {
+        let bare = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+        let prefixed = format!("0x{bare}");
+        let chain_id = U256::from(31_337u64);
+        let expected_address =
+            Address::from_str("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266").unwrap();
+
+        let bare_wallet = wallet_with_chain_id(bare, chain_id).unwrap();
+        let prefixed_wallet = wallet_with_chain_id(&prefixed, chain_id).unwrap();
+
+        assert_eq!(bare_wallet.address(), expected_address);
+        assert_eq!(bare_wallet.address(), prefixed_wallet.address());
+        assert_eq!(bare_wallet.chain_id(), Some(31_337));
+        assert_eq!(prefixed_wallet.chain_id(), Some(31_337));
+    }
 }

@@ -1,16 +1,14 @@
-use crate::bindings::endpoint::Endpoint;
 use crate::bindings::mock_erc20::MockERC20;
 use crate::builders::execute::deposit_collateral::DepositCollateralParams;
 use crate::core::execute::NadoExecute;
-use crate::provider::NadoProvider;
-use crate::revert::parse_provider_error;
+use crate::provider::{
+    signer_provider_from_signer_sync, wait_for_transaction_receipt, NadoProvider,
+};
+use crate::revert::parse_alloy_error;
 use crate::utils::constants::DEFAULT_PENDING_TX_RETIRES;
-use ethers_contract::ContractError;
-use ethers_core::types::TransactionReceipt;
-use ethers_middleware::SignerMiddleware;
-use ethers_providers::Provider;
+use alloy::rpc::types::TransactionReceipt;
+use alloy_primitives::Address;
 use eyre::{eyre, Result};
-use std::sync::Arc;
 use std::time::Duration;
 
 pub async fn deposit_collateral<V: NadoExecute + Sync>(
@@ -45,23 +43,13 @@ pub async fn deposit_collateral<V: NadoExecute + Sync>(
     endpoint_deposit_call(nado, &deposit_collateral_params).await
 }
 
-pub fn provider_with_signer<V: NadoExecute>(nado: &V) -> Result<Arc<NadoProvider>> {
-    let provider = Provider::new_client(&nado.node_url(), 15, 500)?;
-    let wallet = nado.wallet()?.clone();
-    Ok(Arc::new(SignerMiddleware::new(
-        provider.interval(Duration::from_millis(500)),
-        wallet,
-    )))
-}
-
 pub async fn erc20_client<V: NadoExecute + Sync>(
     nado: &V,
     product_id: u32,
-) -> Result<MockERC20<NadoProvider>> {
+) -> Result<MockERC20::MockERC20Instance<NadoProvider>> {
     let token_address = nado.get_token_address(product_id).await?;
-    let client = provider_with_signer(nado)?;
-    let remote_quote = MockERC20::new(token_address, client.clone());
-    Ok(remote_quote)
+    let provider = signer_provider_from_signer_sync(&nado.node_url(), nado.wallet()?.clone())?;
+    Ok(MockERC20::new(Address::from(token_address), provider))
 }
 
 pub async fn endpoint_deposit_call<V: NadoExecute>(
@@ -72,32 +60,38 @@ pub async fn endpoint_deposit_call<V: NadoExecute>(
     let amount = deposit_collateral_params.amount;
     let subaccount = deposit_collateral_params.subaccount;
 
-    let endpoint: Endpoint<NadoProvider> = nado.endpoint()?;
-    let mut tx = if let Some(referral_code) = deposit_collateral_params.referral_code.clone() {
-        endpoint.deposit_collateral_with_referral(subaccount, product_id, amount, referral_code)
+    let endpoint = nado.endpoint()?;
+    // `depositCollateral` and `depositCollateralWithReferral` produce distinct alloy
+    // `CallBuilder` types, so each branch sends independently.
+    let pending_tx = if let Some(referral_code) = deposit_collateral_params.referral_code.clone() {
+        let mut call = endpoint.depositCollateralWithReferral(
+            subaccount.into(),
+            product_id,
+            amount,
+            referral_code,
+        );
+        if let Some(gas_price) = deposit_collateral_params.gas_price {
+            call = call.gas_price(gas_price);
+        }
+        call.send()
+            .await
+            .map_err(|e| eyre!(parse_alloy_error(&e)))?
     } else {
         let mut subaccount_name = [0u8; 12];
         subaccount_name[..12].copy_from_slice(&subaccount[20..]);
-        endpoint.deposit_collateral(subaccount_name, product_id, amount)
+        let mut call = endpoint.depositCollateral(subaccount_name.into(), product_id, amount);
+        if let Some(gas_price) = deposit_collateral_params.gas_price {
+            call = call.gas_price(gas_price);
+        }
+        call.send()
+            .await
+            .map_err(|e| eyre!(parse_alloy_error(&e)))?
     };
-
-    if let Some(gas_price) = deposit_collateral_params.gas_price {
-        tx = tx.gas_price(gas_price);
-    }
-
-    let pending_tx = tx.send().await;
-    let pending_tx = match pending_tx {
-        Ok(tx) => tx,
-        Err(e) => return Err(eyre!(parse_provider_error(e))),
-    };
-    let tx_receipt = pending_tx
-        .retries(DEFAULT_PENDING_TX_RETIRES)
-        .log_msg("pending tx")
-        .await;
-    match tx_receipt {
-        Ok(receipt) => Ok(receipt),
-        Err(e) => Err(eyre!(parse_provider_error(
-            ContractError::<NadoProvider>::ProviderError { e }
-        ))),
-    }
+    println!("pending tx: {:?}", pending_tx.tx_hash());
+    wait_for_transaction_receipt(
+        endpoint.provider(),
+        *pending_tx.tx_hash(),
+        DEFAULT_PENDING_TX_RETIRES,
+    )
+    .await
 }

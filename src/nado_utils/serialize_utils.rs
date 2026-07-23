@@ -66,6 +66,27 @@ where
     }
 }
 
+pub fn strict_str_or_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    if !deserializer.is_human_readable() {
+        return u64::deserialize(deserializer);
+    }
+
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum StringOrU64 {
+        String(String),
+        U64(u64),
+    }
+
+    match StringOrU64::deserialize(deserializer)? {
+        StringOrU64::String(value) => value.parse().map_err(D::Error::custom),
+        StringOrU64::U64(value) => Ok(value),
+    }
+}
+
 pub fn opt_str_or_u64<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
 where
     D: Deserializer<'de>,
@@ -132,7 +153,7 @@ where
     S: Serializer,
 {
     if let Some(value) = value {
-        serialize_u64(value, serializer)
+        serializer.serialize_some(&value.to_string())
     } else {
         serializer.serialize_none()
     }
@@ -184,7 +205,7 @@ where
     S: Serializer,
 {
     if let Some(value) = value {
-        serialize_i128(value, serializer)
+        serializer.serialize_some(&value.to_string())
     } else {
         serializer.serialize_none()
     }
@@ -440,7 +461,7 @@ where
     S: Serializer,
 {
     if let Some(value) = value {
-        serialize_vec_u8(value, serializer)
+        serializer.serialize_some(&WrappedVecU8(value.clone()))
     } else {
         serializer.serialize_none()
     }
@@ -549,7 +570,7 @@ where
     S: Serializer,
 {
     if let Some(value) = value {
-        serialize_bytes32(value, serializer)
+        serializer.serialize_some(&WrappedBytes32(*value))
     } else {
         serializer.serialize_none()
     }
@@ -572,7 +593,7 @@ where
     S: Serializer,
 {
     if let Some(value) = value {
-        serialize_bytes64(value, serializer)
+        serializer.serialize_some(&WrappedBytes64(*value))
     } else {
         serializer.serialize_none()
     }
@@ -634,7 +655,7 @@ where
     S: Serializer,
 {
     if let Some(value) = value {
-        serialize_bytes20(value, serializer)
+        serializer.serialize_some(&WrappedBytes20(*value))
     } else {
         serializer.serialize_none()
     }
@@ -705,7 +726,7 @@ where
     S: Serializer,
 {
     if let Some(value) = value {
-        serialize_vec_bytes20(value, serializer)
+        serializer.serialize_some(&WrappedVecBytes20(value.clone()))
     } else {
         serializer.serialize_none()
     }
@@ -749,7 +770,7 @@ where
     S: Serializer,
 {
     if let Some(value) = value {
-        serialize_f64(value, serializer)
+        serializer.serialize_some(&value.to_string())
     } else {
         serializer.serialize_none()
     }
