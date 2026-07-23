@@ -14,8 +14,8 @@ ws = ["futures-util", "tokio-tungstenite", "rustls"]
 
 [dependencies]
 alloy = { version = "2.0.5", default-features = false, features = ["std", "contract", "json-rpc", "provider-http", "signer-local", "rpc-types", "network", "reqwest-rustls-tls", "sol-types"] }
-alloy-primitives = "1.6.0"
-alloy-sol-types = "1.6.0"
+alloy-primitives = "=1.6.0"
+alloy-sol-types = "=1.6.0"
 async-trait = "0.1.88"
 base64ct = "1.6.0"
 bincode = { version = "1.3.3", features = [] }
