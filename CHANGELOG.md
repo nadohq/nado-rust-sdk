@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0](https://github.com/nadohq/nado-rust-sdk/compare/v0.3.8...v1.0.0) - 2026-07-23
+
+### Fixed
+
+- pin alloy-sol-types & alloy-primitives to =1.6.0 ([#37](https://github.com/nadohq/nado-rust-sdk/pull/37))
+
+### Other
+
+- v1.0.0 ([#35](https://github.com/nadohq/nado-rust-sdk/pull/35))
+- bump v0.3.9 ([#34](https://github.com/nadohq/nado-rust-sdk/pull/34))
+- release v0.3.8 ([#27](https://github.com/nadohq/nado-rust-sdk/pull/27))
+
 ## [0.3.8](https://github.com/nadohq/nado-rust-sdk/compare/v0.3.7...v0.3.8) - 2026-05-21
 
 ### Other
