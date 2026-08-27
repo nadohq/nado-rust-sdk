@@ -96,7 +96,6 @@ sol! {
         function transferOwnership(address new_owner) external;
         function updateBalance(uint32 product_id, bytes32 subaccount, int128 amount_delta, int128 v_quote_delta) external;
         function updatePrice(uint32 product_id, int128 price_x18) external;
-        function updateRisk(uint32 product_id, RiskStore risk_store) external;
         function updateStates(uint128 dt, int128[] avg_price_diffs) external;
     }
 }

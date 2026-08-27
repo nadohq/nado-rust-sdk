@@ -7,14 +7,14 @@ use serde::de::DeserializeOwned;
 use crate::core::base::NadoBase;
 use crate::indexer::Query::FastWithdrawalSignature;
 use crate::indexer::{
-    AccountSnapshotsResponse, CandlesticksResponse, ContractsParams, EventsResponse,
-    FoundationTakerRewardsResponse, FundingRateResponse, InterestAndFundingTicksResponse,
-    IsolatedSubaccountsResponse, LeaderboardResponse, LinkedSignerRateLimitResponse,
+    AccountSnapshotsResponse, AdlLightResponse, CandlesticksResponse, ContractsParams,
+    EventsResponse, FoundationTakerRewardsResponse, FundingRateResponse,
+    InterestAndFundingTicksResponse, IsolatedSubaccountsResponse, LinkedSignerRateLimitResponse,
     LinkedSignerResponse, MakerStatisticsResponse, MarketNetFeesResponse, MarketSnapshotsResponse,
     MatchesResponse, NlpFundingPaymentsResponse, NlpInterestPaymentsResponse, NlpSnapshotsResponse,
-    OraclePriceResponse, OrdersResponse, PerpContractResponse, PerpPriceResponse, ProductSnapshot,
-    ProductsResponse, Query, QueryV2, QuotePriceResponse, SubaccountsResponse, TickerResponse,
-    TickersParams, TradesResponse,
+    OraclePriceResponse, OrdersResponse, PerpContractResponse, PerpPriceResponse,
+    PortfolioHistoryResponse, PortfolioResponse, ProductSnapshot, ProductsResponse, Query, QueryV2,
+    QuotePriceResponse, SubaccountsResponse, TickerResponse, TickersParams, TradesResponse,
 };
 use crate::indexer::{FastWithdrawalSignatureResponse, LiquidatableAccount};
 use crate::serialize_utils::{WrappedU32, WrappedU64};
@@ -77,6 +77,17 @@ pub trait NadoIndexer: NadoBase {
         account_snapshots_query: Query,
     ) -> Result<AccountSnapshotsResponse> {
         self.query(account_snapshots_query).await
+    }
+
+    async fn get_portfolio(&self, portfolio_query: Query) -> Result<PortfolioResponse> {
+        self.query(portfolio_query).await
+    }
+
+    async fn get_portfolio_history(
+        &self,
+        portfolio_history_query: Query,
+    ) -> Result<PortfolioHistoryResponse> {
+        self.query(portfolio_history_query).await
     }
 
     async fn get_events(&self, events_query: Query) -> Result<EventsResponse> {
@@ -156,6 +167,11 @@ pub trait NadoIndexer: NadoBase {
         self.query(query).await
     }
 
+    async fn get_adl_light(&self, subaccount: [u8; 32]) -> Result<AdlLightResponse> {
+        let query = Query::AdlLight { subaccount };
+        self.query(query).await
+    }
+
     async fn get_market_snapshots(
         &self,
         market_snapshots_query: Query,
@@ -214,10 +230,6 @@ pub trait NadoIndexer: NadoBase {
     ) -> Result<HashMap<String, PerpContractResponse>> {
         self.query_v2("/contracts", QueryV2::Contracts(ContractsParams { edge }))
             .await
-    }
-
-    async fn get_leaderboard(&self, query: Query) -> Result<LeaderboardResponse> {
-        self.query(query).await
     }
 
     async fn get_fast_withdrawal_signature(

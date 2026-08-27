@@ -15,7 +15,6 @@ use crate::builders::indexer::candlesticks::CandlesticksBuilder;
 use crate::builders::indexer::events::EventsBuilder;
 use crate::builders::indexer::historical_orders::HistoricalOrdersBuilder;
 use crate::builders::indexer::interest_and_funding::InterestAndFundingTicksBuilder;
-use crate::builders::indexer::leaderboard::LeaderboardBuilder;
 use crate::builders::indexer::market_net_fees::MarketNetFeesBuilder;
 use crate::builders::indexer::market_snapshots::MarketSnapshotsBuilder;
 use crate::builders::indexer::matches::MatchesBuilder;
@@ -24,6 +23,8 @@ use crate::builders::indexer::multi_product_snapshots::MultiProductSnapshotsBuil
 use crate::builders::indexer::nlp_funding_payment::NlpFundingPaymentsBuilder;
 use crate::builders::indexer::nlp_interest_payment::NlpInterestPaymentsBuilder;
 use crate::builders::indexer::nlp_snapshots::NlpSnapshotsBuilder;
+use crate::builders::indexer::portfolio::PortfolioBuilder;
+use crate::builders::indexer::portfolio_history::PortfolioHistoryBuilder;
 use crate::builders::indexer::product_snapshots::ProductSnapshotsBuilder;
 use crate::builders::indexer::subaccounts::SubaccountsBuilder;
 use crate::builders::indexer::trades::TradesParamsBuilder;
@@ -92,6 +93,8 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
         MultiProductSnapshotsBuilder
     );
     get_nado_builder!(get_account_snapshots_builder, AccountSnapshotsBuilder);
+    get_nado_builder!(get_portfolio_builder, PortfolioBuilder);
+    get_nado_builder!(get_portfolio_history_builder, PortfolioHistoryBuilder);
     get_nado_builder!(get_subaccounts_builder, SubaccountsBuilder);
     get_nado_builder!(
         get_interest_and_funding_builder,
@@ -107,5 +110,4 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
     get_nado_builder!(get_nlp_snapshots_builder, NlpSnapshotsBuilder);
     get_nado_builder!(get_trades_builder, TradesParamsBuilder);
     get_nado_builder!(fee_calculator, FeeCalculator);
-    get_nado_builder!(get_leaderboard_builder, LeaderboardBuilder);
 }

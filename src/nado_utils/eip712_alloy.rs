@@ -28,6 +28,10 @@ pub mod sol_types {
         struct NadoAuthentication { string method; bytes32 sender; bytes32 payloadHash; uint64 nonce; }
         struct LeaderboardAuthentication { bytes32 sender; uint64 expiration; uint32[] contestIds; }
         struct SocialAuthentication { bytes32 sender; uint64 expiration; string provider; }
+        #[derive(Debug)]
+        struct SubmitTransactions { uint64 idx; bytes32 transactionsHash; }
+        #[derive(Debug)]
+        struct SignedTransaction { uint64 idx; bytes transaction; }
     }
 }
 
@@ -36,6 +40,20 @@ pub trait NadoEip712 {
     fn to_sol(&self) -> Self::Sol;
     fn alloy_signing_hash(&self, domain: &alloy_sol_types::Eip712Domain) -> [u8; 32] {
         self.to_sol().eip712_signing_hash(domain).0
+    }
+}
+
+impl NadoEip712 for sol_types::SubmitTransactions {
+    type Sol = Self;
+    fn to_sol(&self) -> Self::Sol {
+        self.clone()
+    }
+}
+
+impl NadoEip712 for sol_types::SignedTransaction {
+    type Sol = Self;
+    fn to_sol(&self) -> Self::Sol {
+        self.clone()
     }
 }
 
