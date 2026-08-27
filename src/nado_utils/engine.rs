@@ -14,11 +14,11 @@ use crate::product::Product;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_nested_vec_i128,
     deserialize_option_bytes32, deserialize_option_i128, deserialize_option_vec_u8,
-    deserialize_u128, deserialize_u64, deserialize_u64_keyed_map, deserialize_vec_i128,
-    deserialize_vec_u8, serialize_bytes20, serialize_bytes32, serialize_i128,
+    deserialize_u128, deserialize_u64, deserialize_u64_keyed_map, deserialize_vec_bytes32,
+    deserialize_vec_i128, deserialize_vec_u8, serialize_bytes20, serialize_bytes32, serialize_i128,
     serialize_nested_vec_i128, serialize_option_bytes32, serialize_option_i128,
     serialize_option_vec_u8, serialize_u128, serialize_u64, serialize_u64_keyed_map,
-    serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
+    serialize_vec_bytes32, serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
 };
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
@@ -1734,6 +1734,24 @@ pub enum ExecuteResponseData {
     PlaceOrders(PlaceOrdersResponse),
     CancelOrders(CancelOrdersResponse),
     CancelProductOrders(CancelOrdersResponse),
+    MatchOrdersOtc(MatchOrdersOtcResponse),
+}
+
+#[derive(
+    Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+pub struct MatchOrdersOtcResponse {
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub taker_digest: [u8; 32],
+    #[serde(
+        serialize_with = "serialize_vec_bytes32",
+        deserialize_with = "deserialize_vec_bytes32"
+    )]
+    pub maker_digests: Vec<[u8; 32]>,
 }
 
 #[derive(

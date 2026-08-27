@@ -1,6 +1,6 @@
 [package]
 name = "nado-sdk"
-version = "1.0.0"
+version = "2.0.0"
 description = "Official Rust SDK for the Nado Protocol API"
 readme = "README.md"
 repository = "https://github.com/nadohq/nado-rust-sdk"
@@ -78,3 +78,7 @@ path = "examples/product_ids_and_symbols.rs"
 name = "place_order_websocket"
 path = "examples/place_order_websocket.rs"
 required-features = ["ws"]
+
+[[example]]
+name = "fast_withdrawal_e2e"
+path = "examples/fast_withdrawal_e2e.rs"

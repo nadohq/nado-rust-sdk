@@ -1,14 +1,13 @@
 use crate::bindings::endpoint::{WithdrawCollateral, WithdrawCollateralV2};
 use crate::bindings::querier::{PerpBalance, PerpProduct, SpotBalance, SpotProduct};
 use crate::eip712_structs;
-use crate::eip712_structs::{LeaderboardAuthentication, SocialAuthentication};
 use crate::engine::TradingStatus;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_f64, deserialize_i128, deserialize_i64,
     deserialize_option_i128, deserialize_u128, deserialize_u64, deserialize_vec_bytes20,
-    deserialize_vec_u8, serialize_bytes20, serialize_bytes32, serialize_f64, serialize_i128,
-    serialize_i64, serialize_option_i128, serialize_u128, serialize_u64, serialize_vec_bytes20,
-    serialize_vec_u8, WrappedBytes32, WrappedI128, WrappedU32, WrappedU64,
+    serialize_bytes20, serialize_bytes32, serialize_f64, serialize_i128, serialize_i64,
+    serialize_option_i128, serialize_u128, serialize_u64, serialize_vec_bytes20, WrappedBytes32,
+    WrappedI128, WrappedU32, WrappedU64,
 };
 use crate::tx::{NadoTx, TxType};
 use alloy_primitives::Address;
@@ -106,6 +105,16 @@ pub enum Query {
         isolated: Option<bool>,
         #[serde(default)]
         active: Option<bool>,
+    },
+
+    Portfolio {
+        subaccount: WrappedBytes32,
+    },
+
+    PortfolioHistory {
+        subaccount: WrappedBytes32,
+        start_time: WrappedU64,
+        end_time: WrappedU64,
     },
 
     Matches {
@@ -221,54 +230,6 @@ pub enum Query {
         digests: Vec<WrappedBytes32>,
     },
 
-    Leaderboard {
-        contest_id: WrappedU32,
-        rank_type: Option<LeaderboardType>,
-        start: Option<WrappedU64>,
-        limit: Option<WrappedU64>,
-        order: Option<SortOrder>,
-    },
-
-    LeaderboardRank {
-        contest_ids: Vec<WrappedU32>,
-        #[serde(
-            deserialize_with = "deserialize_bytes32",
-            serialize_with = "serialize_bytes32"
-        )]
-        subaccount: [u8; 32],
-    },
-
-    LeaderboardContests {
-        contest_ids: Option<Vec<WrappedU32>>,
-        active: Option<bool>,
-    },
-
-    LeaderboardRegistrations {
-        #[serde(
-            deserialize_with = "deserialize_bytes32",
-            serialize_with = "serialize_bytes32"
-        )]
-        subaccount: [u8; 32],
-        contest_ids: Option<Vec<WrappedU32>>,
-        active: Option<bool>,
-    },
-
-    LeaderboardRegister {
-        update_registration: UpdateLeaderboardRegistration,
-    },
-
-    SocialConnect {
-        update_social_account: UpdateSocialAccount,
-    },
-
-    ListSocialAccounts {
-        address: Address,
-    },
-
-    RevokeSocialAccount {
-        update_social_account: UpdateSocialAccount,
-    },
-
     FastWithdrawalSignature {
         idx: WrappedU64,
     },
@@ -300,25 +261,12 @@ pub enum Query {
         subaccount: [u8; 32],
     },
 
-    InkAirdrop {
-        address: Address,
-    },
-
-    PrivateAlphaChoice {
-        address: Address,
-    },
-
-    NadoPoints {
-        address: Address,
-    },
-
-    #[serde(rename = "nado_xpoints")]
-    NadoXPoints {
-        address: Address,
-    },
-
-    CashIncentives {
-        wallet_address: Address,
+    AdlLight {
+        #[serde(
+            deserialize_with = "deserialize_bytes32",
+            serialize_with = "serialize_bytes32"
+        )]
+        subaccount: [u8; 32],
     },
 }
 
@@ -505,6 +453,8 @@ pub struct Event {
         deserialize_with = "deserialize_i128"
     )]
     pub quote_volume_cumulative: i128,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub cumulative_trade_count: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1170,6 +1120,23 @@ pub struct IsolatedSubaccountsResponse {
     pub isolated_subaccounts: Vec<IsolatedSubaccount>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AdlLight {
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub subaccount: [u8; 32],
+    pub product_id: i32,
+    pub isolated: bool,
+    pub light: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AdlLightResponse {
+    pub adl_lights: Vec<AdlLight>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct MarketSnapshotsResponse {
     pub snapshots: Vec<MarketSnapshotData>,
@@ -1488,14 +1455,52 @@ pub struct Trade {
 pub type TradesResponse = Vec<Trade>;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct MerkleProof {
-    pub total_amount: String,
-    pub proof: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct AccountSnapshotsResponse {
     pub snapshots: HashMap<WrappedBytes32, HashMap<WrappedU64, Vec<Event>>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub enum PortfolioPeriod {
+    Day,
+    Week,
+    Month,
+    AllTime,
+    PerpDay,
+    PerpWeek,
+    PerpMonth,
+    PerpAllTime,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PortfolioPoint(
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")] pub u64,
+    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")] pub f64,
+);
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PortfolioCountPoint(
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")] pub u64,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")] pub u64,
+);
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioHistory {
+    pub account_value_history: Vec<PortfolioPoint>,
+    pub pnl_history: Vec<PortfolioPoint>,
+    pub volume_history: Vec<PortfolioPoint>,
+    pub trade_size_history: Vec<PortfolioPoint>,
+    pub market_count_history: Vec<PortfolioCountPoint>,
+}
+
+pub type PortfolioResponse = Vec<(PortfolioPeriod, PortfolioHistory)>;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioHistoryResponse {
+    pub spot: PortfolioHistory,
+    pub perp: PortfolioHistory,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1504,206 +1509,6 @@ pub struct Interval {
     pub count: u64,
     pub granularity: u64,
     pub max_time: Option<WrappedU64>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum LeaderboardType {
-    PNL,
-    ROI,
-    Volume,
-    Liquidation,
-    Balance,
-}
-
-impl LeaderboardType {
-    pub fn to_str(&self) -> &str {
-        match self {
-            LeaderboardType::PNL => "pnl",
-            LeaderboardType::ROI => "roi",
-            LeaderboardType::Volume => "volume",
-            LeaderboardType::Liquidation => "liquidation",
-            LeaderboardType::Balance => "balance",
-        }
-    }
-}
-
-impl std::str::FromStr for LeaderboardType {
-    type Err = eyre::Report;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "pnl" => Ok(LeaderboardType::PNL),
-            "roi" => Ok(LeaderboardType::ROI),
-            "volume" => Ok(LeaderboardType::Volume),
-            "liquidation" => Ok(LeaderboardType::Liquidation),
-            "balance" => Ok(LeaderboardType::Balance),
-            _ => Err(eyre::eyre!("unsupported leaderboard type: {}", s)),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum SortOrder {
-    #[serde(rename = "ASC", alias = "asc", alias = "Asc")]
-    Asc,
-    #[serde(rename = "DESC", alias = "desc", alias = "Desc")]
-    Desc,
-}
-
-impl SortOrder {
-    pub fn to_str(&self) -> &str {
-        match self {
-            SortOrder::Asc => "ASC",
-            SortOrder::Desc => "DESC",
-        }
-    }
-}
-
-impl std::str::FromStr for SortOrder {
-    type Err = eyre::Report;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s.to_uppercase().as_str() {
-            "ASC" => Ok(SortOrder::Asc),
-            "DESC" => Ok(SortOrder::Desc),
-            _ => Err(eyre::eyre!("unsupported sort order: {}", s)),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum QualificationStatus {
-    Qualified,
-    InsufficientAccountValue,
-    InsufficientVolume,
-    InsufficientAccountValueAndVolume,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TrackPosition {
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub value: f64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub rank: u64,
-    pub qualification_status: QualificationStatus,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ContestTrack {
-    pub track_id: u32,
-    pub rank_type: LeaderboardType,
-    pub sort_order: SortOrder,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub threshold: f64,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub volume_threshold: f64,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct LeaderboardPosition {
-    #[serde(
-        serialize_with = "serialize_bytes32",
-        deserialize_with = "deserialize_bytes32"
-    )]
-    pub subaccount: [u8; 32],
-    pub contest_id: u32,
-    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
-    pub account_value: f64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub update_time: u64,
-    pub tracks: HashMap<LeaderboardType, TrackPosition>,
-    #[serde(default)]
-    pub social_accounts: Vec<SocialAccountInfo>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SocialAccountInfo {
-    pub provider: String,
-    pub username: String,
-    pub display_name: String,
-    pub profile_image_url: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SocialAccountResponse {
-    pub accounts: Vec<SocialAccountInfo>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct OAuthUrlResponse {
-    pub url: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct LeaderboardContest {
-    pub contest_id: u32,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub start_time: u64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub end_time: u64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub count: u64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub last_updated: u64,
-    pub product_ids: Vec<u32>,
-    pub active: bool,
-    pub title: String,
-    pub description: String,
-    pub tracks: Vec<ContestTrack>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LeaderboardResponse {
-    pub positions: Vec<LeaderboardPosition>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LeaderboardRankResponse {
-    pub positions: HashMap<String, LeaderboardPosition>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LeaderboardContestsResponse {
-    pub contests: Vec<LeaderboardContest>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct LeaderboardRegistration {
-    #[serde(
-        serialize_with = "serialize_bytes32",
-        deserialize_with = "deserialize_bytes32"
-    )]
-    pub subaccount: [u8; 32],
-    pub contest_id: u32,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub update_time: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct LeaderboardRegistrationResponse {
-    pub registrations: Vec<LeaderboardRegistration>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct UpdateLeaderboardRegistration {
-    pub tx: LeaderboardAuthentication,
-    #[serde(
-        serialize_with = "serialize_vec_u8",
-        deserialize_with = "deserialize_vec_u8"
-    )]
-    pub signature: Vec<u8>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct UpdateSocialAccount {
-    pub tx: SocialAuthentication,
-    #[serde(
-        serialize_with = "serialize_vec_u8",
-        deserialize_with = "deserialize_vec_u8"
-    )]
-    pub signature: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1735,187 +1540,4 @@ pub type BacklogResponse = BacklogData;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DirectDepositAddressResponse {
     pub v1_address: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct InkAirdropResponse {
-    pub amount: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct PrivateAlphaChoiceResponse {
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub points: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub fee_refund: i128,
-    pub nft_eligibility: bool,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NadoPointsEpochData {
-    pub epoch: u32,
-    pub description: String,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub start_time: u64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub end_time: u64,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub total_points: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub points: i128,
-    pub rank: u64,
-    pub tier: u32,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NadoPointsAllTime {
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub points: i128,
-    pub rank: u64,
-    pub tier: u32,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NadoPointsResponse {
-    pub points_per_epoch: Vec<NadoPointsEpochData>,
-    pub all_time_points: NadoPointsAllTime,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NadoXPointsQuestData {
-    pub quest_type: String,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub points: i128,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NadoXPointsEpochData {
-    pub epoch: u32,
-    pub description: String,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub start_time: u64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub end_time: u64,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub total_points: i128,
-    pub quests: Vec<NadoXPointsQuestData>,
-    pub rank: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NadoXPointsAllTime {
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub total_points: i128,
-    pub quests: Vec<NadoXPointsQuestData>,
-    pub rank: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NadoXPointsResponse {
-    pub points_per_epoch: Vec<NadoXPointsEpochData>,
-    pub all_time_points: NadoXPointsAllTime,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CashIncentivesEventMetadata {
-    pub event_id: u64,
-    pub description: String,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub epoch_start: u64,
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub epoch_end: u64,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub max_volume: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub max_reward: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub min_volume: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub min_reward: i128,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CashIncentivesPlatformStats {
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub platform_volume: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub unlocked_reward: i128,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CashIncentivesWalletSummary {
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub total_reward: i128,
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub claimable_reward: i128,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CashIncentivesEventWallet {
-    #[serde(
-        serialize_with = "serialize_i128",
-        deserialize_with = "deserialize_i128"
-    )]
-    pub reward: i128,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CashIncentivesEventData {
-    pub metadata: CashIncentivesEventMetadata,
-    pub platform: CashIncentivesPlatformStats,
-    pub wallet: CashIncentivesEventWallet,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CashIncentivesResponse {
-    pub events: Vec<CashIncentivesEventData>,
-    pub wallet_summary: CashIncentivesWalletSummary,
 }
