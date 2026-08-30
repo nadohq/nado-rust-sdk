@@ -67,10 +67,23 @@ nado_sdk = "2.0.0"
 
 See the [examples](https://github.com/nadohq/nado-rust-sdk/tree/main/examples) and [sanity](https://github.com/nadohq/nado-rust-sdk/tree/main/src/sanity) directories.
 
+### TLS backend
+
+The SDK uses `native-tls` by default through `reqwest`. To use the Rustls backend instead, disable default features and enable `reqwest-rustls`:
+
+```toml
+[dependencies]
+nado-sdk = { version = "1.0.0", default-features = false, features = ["reqwest-rustls"] }
+```
+
+The two TLS backend features are mutually exclusive. Use `reqwest-native-tls` for the default backend and `reqwest-rustls` when the application needs Rustls.
+
 ## Running locally
 
 ### Run sanity checks
 
+- `cargo check`: validates the default native-tls configuration.
+- `cargo check --no-default-features --features reqwest-rustls`: validates the Rustls configuration.
 - `cargo run -- --execute-sanity`: runs sanity checks for executes.
 - `cargo run -- --query-sanity`: runs sanity checks for engine queries.
 - `cargo run -- --indexer-sanity`: runs sanity checks for indexer queries.
