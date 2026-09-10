@@ -4,9 +4,10 @@ use crate::eip712_structs;
 use crate::engine::TradingStatus;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_f64, deserialize_i128, deserialize_i64,
-    deserialize_option_i128, deserialize_u128, deserialize_u64, deserialize_vec_bytes20,
-    serialize_bytes20, serialize_bytes32, serialize_f64, serialize_i128, serialize_i64,
-    serialize_option_i128, serialize_u128, serialize_u64, serialize_vec_bytes20, WrappedBytes32,
+    deserialize_option_bytes32, deserialize_option_i128, deserialize_option_i64, deserialize_u128,
+    deserialize_u64, deserialize_vec_bytes20, serialize_bytes20, serialize_bytes32, serialize_f64,
+    serialize_i128, serialize_i64, serialize_option_bytes32, serialize_option_i128,
+    serialize_option_i64, serialize_u128, serialize_u64, serialize_vec_bytes20, WrappedBytes32,
     WrappedI128, WrappedU32, WrappedU64,
 };
 use crate::tx::{NadoTx, TxType};
@@ -99,6 +100,15 @@ pub enum Query {
         trigger_types: Option<Vec<crate::trigger::TriggerType>>,
     },
 
+    Positions {
+        subaccount: WrappedBytes32,
+        product_id: Option<WrappedU32>,
+        isolated: Option<bool>,
+        idx: Option<WrappedU64>,
+        limit: Option<WrappedU32>,
+        open: Option<bool>,
+    },
+
     AccountSnapshots {
         subaccounts: Vec<WrappedBytes32>,
         timestamps: Vec<WrappedU64>,
@@ -112,6 +122,12 @@ pub enum Query {
     },
 
     PortfolioHistory {
+        subaccount: WrappedBytes32,
+        start_time: WrappedU64,
+        end_time: WrappedU64,
+    },
+
+    PortfolioCalendar {
         subaccount: WrappedBytes32,
         start_time: WrappedU64,
         end_time: WrappedU64,
@@ -472,6 +488,154 @@ pub struct EventsResponse {
     pub txs: Vec<Tx>,
 }
 
+/// close_id of a position that is still open
+pub const POSITION_CLOSE_ID_SENTINEL: i64 = -1;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Position {
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub subaccount: [u8; 32],
+    pub product_id: u32,
+    pub isolated: bool,
+    pub direction: bool,
+    #[serde(serialize_with = "serialize_i64", deserialize_with = "deserialize_i64")]
+    pub open_id: i64,
+    #[serde(serialize_with = "serialize_i64", deserialize_with = "deserialize_i64")]
+    pub close_id: i64,
+    #[serde(serialize_with = "serialize_i64", deserialize_with = "deserialize_i64")]
+    pub submission_idx: i64,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub amount: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub max_amount: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub total_open_amount: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub total_close_amount: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub average_entry_price: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub average_exit_price: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub liquidated_amount: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub max_isolated_leverage_x18: i128,
+    #[serde(
+        default,
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub open_fee: i128,
+    #[serde(
+        default,
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub close_fee: i128,
+    #[serde(
+        default,
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub realized_pnl: i128,
+    #[serde(
+        default,
+        serialize_with = "serialize_u64",
+        deserialize_with = "deserialize_u64"
+    )]
+    pub open_timestamp: u64,
+    #[serde(
+        default,
+        serialize_with = "serialize_u64",
+        deserialize_with = "deserialize_u64"
+    )]
+    pub update_timestamp: u64,
+    #[serde(default)]
+    pub open_reason: Option<TxType>,
+    #[serde(default)]
+    pub close_reason: Option<TxType>,
+    #[serde(
+        default,
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub net_funding_payment: i128,
+    #[serde(
+        default,
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub net_interest_payment: i128,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_bytes32",
+        deserialize_with = "deserialize_option_bytes32"
+    )]
+    pub open_digest: Option<[u8; 32]>,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_bytes32",
+        deserialize_with = "deserialize_option_bytes32"
+    )]
+    pub close_digest: Option<[u8; 32]>,
+    #[serde(
+        default,
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub net_entry_unrealized: i128,
+}
+
+impl Position {
+    pub fn is_closed(&self) -> bool {
+        self.close_id != POSITION_CLOSE_ID_SENTINEL
+    }
+
+    /// submission_idx of the tx that closed the position, or of the last tx
+    /// that updated it if it is still open
+    pub fn end_idx(&self) -> i64 {
+        if self.is_closed() {
+            self.close_id
+        } else {
+            self.submission_idx
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PositionsResponse {
+    pub positions: Vec<Position>,
+    pub events: Vec<Event>,
+    pub txs: Vec<Tx>,
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum Product {
@@ -686,6 +850,13 @@ pub struct FundingRateResponse {
     pub funding_rate_x18: i64,
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub update_time: u64,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_option_i64",
+        deserialize_with = "deserialize_option_i64"
+    )]
+    pub premium_x18: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1501,6 +1672,26 @@ pub type PortfolioResponse = Vec<(PortfolioPeriod, PortfolioHistory)>;
 pub struct PortfolioHistoryResponse {
     pub spot: PortfolioHistory,
     pub perp: PortfolioHistory,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioCalendarDay {
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub date: u64,
+    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
+    pub pnl: f64,
+    #[serde(serialize_with = "serialize_f64", deserialize_with = "deserialize_f64")]
+    pub volume: f64,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub trade_count: u64,
+    pub product_ids: Vec<u32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct PortfolioCalendarResponse {
+    pub spot: Vec<PortfolioCalendarDay>,
+    pub perp: Vec<PortfolioCalendarDay>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

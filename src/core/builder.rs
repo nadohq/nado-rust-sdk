@@ -24,7 +24,9 @@ use crate::builders::indexer::nlp_funding_payment::NlpFundingPaymentsBuilder;
 use crate::builders::indexer::nlp_interest_payment::NlpInterestPaymentsBuilder;
 use crate::builders::indexer::nlp_snapshots::NlpSnapshotsBuilder;
 use crate::builders::indexer::portfolio::PortfolioBuilder;
+use crate::builders::indexer::portfolio_calendar::PortfolioCalendarBuilder;
 use crate::builders::indexer::portfolio_history::PortfolioHistoryBuilder;
+use crate::builders::indexer::positions::PositionsBuilder;
 use crate::builders::indexer::product_snapshots::ProductSnapshotsBuilder;
 use crate::builders::indexer::subaccounts::SubaccountsBuilder;
 use crate::builders::indexer::trades::TradesParamsBuilder;
@@ -83,6 +85,7 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
     get_nado_builder!(get_historical_orders_builder, HistoricalOrdersBuilder);
     get_nado_builder!(get_events_builder, EventsBuilder);
     get_nado_builder!(get_matches_builder, MatchesBuilder);
+    get_nado_builder!(get_positions_builder, PositionsBuilder);
     get_nado_builder!(
         get_matches_and_liquidations_builder,
         MatchesAndLiquidationsBuilder
@@ -94,6 +97,7 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
     );
     get_nado_builder!(get_account_snapshots_builder, AccountSnapshotsBuilder);
     get_nado_builder!(get_portfolio_builder, PortfolioBuilder);
+    get_nado_builder!(get_portfolio_calendar_builder, PortfolioCalendarBuilder);
     get_nado_builder!(get_portfolio_history_builder, PortfolioHistoryBuilder);
     get_nado_builder!(get_subaccounts_builder, SubaccountsBuilder);
     get_nado_builder!(
