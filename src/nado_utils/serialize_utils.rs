@@ -234,6 +234,26 @@ where
     s.parse().map_err(|_| D::Error::custom("invalid i64 value"))
 }
 
+pub fn serialize_option_i64<S>(value: &Option<i64>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    if let Some(value) = value {
+        serializer.serialize_some(&value.to_string())
+    } else {
+        serializer.serialize_none()
+    }
+}
+
+pub fn deserialize_option_i64<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(deserializer)?;
+    opt.map(|s| s.parse().map_err(|_| D::Error::custom("invalid i64 value")))
+        .transpose()
+}
+
 #[derive(
     rkyv::Archive,
     rkyv::Deserialize,

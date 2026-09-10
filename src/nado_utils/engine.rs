@@ -277,6 +277,14 @@ pub struct PlaceOrder {
 
 #[derive(Archive, RkyvDeserialize, RkyvSerialize, Clone, Serialize, Deserialize, Debug)]
 #[archive(check_bytes)]
+#[serde(rename_all = "snake_case")]
+pub struct MatchOrdersOtcLeg {
+    pub taker: PlaceOrder,
+    pub makers: Vec<PlaceOrder>,
+}
+
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Clone, Serialize, Deserialize, Debug)]
+#[archive(check_bytes)]
 #[serde(rename_all = "camelCase")]
 pub struct Artifact {
     pub bytecode: String,
@@ -1735,6 +1743,7 @@ pub enum ExecuteResponseData {
     CancelOrders(CancelOrdersResponse),
     CancelProductOrders(CancelOrdersResponse),
     MatchOrdersOtc(MatchOrdersOtcResponse),
+    MatchOrdersOtcs(MatchOrdersOtcsResponse),
 }
 
 #[derive(
@@ -1752,6 +1761,14 @@ pub struct MatchOrdersOtcResponse {
         deserialize_with = "deserialize_vec_bytes32"
     )]
     pub maker_digests: Vec<[u8; 32]>,
+}
+
+#[derive(
+    Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+pub struct MatchOrdersOtcsResponse {
+    pub legs: Vec<MatchOrdersOtcResponse>,
 }
 
 #[derive(

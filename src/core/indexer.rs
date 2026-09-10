@@ -13,8 +13,9 @@ use crate::indexer::{
     LinkedSignerResponse, MakerStatisticsResponse, MarketNetFeesResponse, MarketSnapshotsResponse,
     MatchesResponse, NlpFundingPaymentsResponse, NlpInterestPaymentsResponse, NlpSnapshotsResponse,
     OraclePriceResponse, OrdersResponse, PerpContractResponse, PerpPriceResponse,
-    PortfolioHistoryResponse, PortfolioResponse, ProductSnapshot, ProductsResponse, Query, QueryV2,
-    QuotePriceResponse, SubaccountsResponse, TickerResponse, TickersParams, TradesResponse,
+    PortfolioCalendarResponse, PortfolioHistoryResponse, PortfolioResponse, PositionsResponse,
+    ProductSnapshot, ProductsResponse, Query, QueryV2, QuotePriceResponse, SubaccountsResponse,
+    TickerResponse, TickersParams, TradesResponse,
 };
 use crate::indexer::{FastWithdrawalSignatureResponse, LiquidatableAccount};
 use crate::serialize_utils::{WrappedU32, WrappedU64};
@@ -90,6 +91,13 @@ pub trait NadoIndexer: NadoBase {
         self.query(portfolio_history_query).await
     }
 
+    async fn get_portfolio_calendar(
+        &self,
+        portfolio_calendar_query: Query,
+    ) -> Result<PortfolioCalendarResponse> {
+        self.query(portfolio_calendar_query).await
+    }
+
     async fn get_events(&self, events_query: Query) -> Result<EventsResponse> {
         self.query(events_query).await
     }
@@ -100,6 +108,10 @@ pub trait NadoIndexer: NadoBase {
 
     async fn get_matches(&self, matches_query: Query) -> Result<MatchesResponse> {
         self.query(matches_query).await
+    }
+
+    async fn get_positions(&self, positions_query: Query) -> Result<PositionsResponse> {
+        self.query(positions_query).await
     }
 
     async fn get_subaccounts(&self, subaccounts_query: Query) -> Result<SubaccountsResponse> {

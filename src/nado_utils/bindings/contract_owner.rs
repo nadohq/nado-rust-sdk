@@ -13,5 +13,7 @@ sol! {
         function isWrapVaultAssetReady(address recipient, uint32 productId, bool isFirstDeposit) external returns (bool);
         function forceRebalanceNlpPool(int128[] nlp_pool_rebalance_x18) external;
         function nlpProfitShare(uint64 pool_id, bytes32 recipient, uint128 amount) external;
+        function updateTierFeeRates(uint32[] tier, uint32[] productId, int128[] makerRateX18, int128[] takerRateX18) external;
+        function updateBuilders(uint32[] builderIds, address[] owners, uint32[] defaultFeeTiers, int128[] lowestFeeRates, int128[] highestFeeRates) external;
     }
 }
