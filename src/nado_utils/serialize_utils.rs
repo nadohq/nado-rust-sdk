@@ -1,5 +1,4 @@
-use ethers::types::{H160, H256, I256, U256};
-use ethers_core::types::{Bytes, H512};
+use alloy_primitives::{Address, Bytes, B256, B512, I256, U256};
 use eyre::Result;
 use serde::de::{Error, SeqAccess, Visitor};
 use serde::ser::SerializeSeq;
@@ -101,6 +100,24 @@ where
         opt.and_then(|v| match v {
             Either::Str(s) => s.parse().ok(),
             Either::U64(n) => Some(n),
+        })
+    })
+}
+
+pub fn opt_str_or_u32<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Either {
+        Str(String),
+        U32(u32),
+    }
+    Option::<Either>::deserialize(deserializer).map(|opt| {
+        opt.and_then(|v| match v {
+            Either::Str(s) => s.parse().ok(),
+            Either::U32(n) => Some(n),
         })
     })
 }
@@ -377,7 +394,7 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    U256::from_dec_str(&s).map_err(|_| D::Error::custom("invalid u256 value"))
+    U256::from_str_radix(&s, 10).map_err(|_| D::Error::custom("invalid u256 value"))
 }
 
 pub fn serialize_i256<S>(value: &I256, serializer: S) -> Result<S::Ok, S::Error>
@@ -414,9 +431,9 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    Ok(H512::from_str(&s)
-        .map_err(|_| D::Error::custom("invalid H256 value"))?
-        .to_fixed_bytes())
+    Ok(B512::from_str(&s)
+        .map_err(|_| D::Error::custom("invalid H512 value"))?
+        .0)
 }
 
 pub fn serialize_bytes32<S>(value: &[u8; 32], serializer: S) -> Result<S::Ok, S::Error>
@@ -438,9 +455,9 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    Ok(H256::from_str(&s)
+    Ok(B256::from_str(&s)
         .map_err(|_| D::Error::custom("invalid H256 value"))?
-        .to_fixed_bytes())
+        .0)
 }
 
 pub fn serialize_bytes20<S>(value: &[u8; 20], serializer: S) -> Result<S::Ok, S::Error>
@@ -462,9 +479,9 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    Ok(H160::from_str(&s)
+    Ok(Address::from_str(&s)
         .map_err(|_| D::Error::custom("invalid H160 value"))?
-        .to_fixed_bytes())
+        .into_array())
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -520,7 +537,7 @@ where
         .to_vec())
 }
 
-#[derive(Hash, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Hash, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct WrappedBytes32(
     #[serde(
         serialize_with = "serialize_bytes32",
@@ -633,8 +650,8 @@ impl<'de> Visitor<'de> for VecBytes32Deserializer {
         A: SeqAccess<'de>,
     {
         let mut ret = Vec::<[u8; 32]>::new();
-        while let Some(v) = seq.next_element::<H256>()? {
-            ret.push(v.to_fixed_bytes());
+        while let Some(v) = seq.next_element::<WrappedBytes32>()? {
+            ret.push(v.0);
         }
         Ok(ret)
     }
@@ -704,8 +721,8 @@ impl<'de> Visitor<'de> for VecBytes20Deserializer {
         A: SeqAccess<'de>,
     {
         let mut ret = Vec::<[u8; 20]>::new();
-        while let Some(v) = seq.next_element::<H160>()? {
-            ret.push(v.to_fixed_bytes());
+        while let Some(v) = seq.next_element::<WrappedBytes20>()? {
+            ret.push(v.0);
         }
         Ok(ret)
     }

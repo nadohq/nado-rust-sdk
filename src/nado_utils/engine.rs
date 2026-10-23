@@ -8,15 +8,15 @@ use crate::bindings::querier::{
 };
 use crate::eip712_structs::{
     BurnNlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintNlp, Order,
-    TransferQuote, WithdrawCollateral, WithdrawCollateralV2,
+    TransferQuote, VenueDeposit, VenueTransfer, WithdrawCollateral, WithdrawCollateralV2,
 };
 use crate::product::Product;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_nested_vec_i128,
     deserialize_option_bytes32, deserialize_option_i128, deserialize_option_vec_u8,
     deserialize_u128, deserialize_u64, deserialize_u64_keyed_map, deserialize_vec_bytes32,
-    deserialize_vec_i128, deserialize_vec_u8, serialize_bytes20, serialize_bytes32, serialize_i128,
-    serialize_nested_vec_i128, serialize_option_bytes32, serialize_option_i128,
+    deserialize_vec_i128, deserialize_vec_u8, opt_str_or_u32, serialize_bytes20, serialize_bytes32,
+    serialize_i128, serialize_nested_vec_i128, serialize_option_bytes32, serialize_option_i128,
     serialize_option_vec_u8, serialize_u128, serialize_u64, serialize_u64_keyed_map,
     serialize_vec_bytes32, serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
 };
@@ -201,6 +201,31 @@ pub enum Query {
         #[serde(deserialize_with = "str_or_u32")]
         product_id: u32,
         spot_leverage: Option<String>,
+        #[serde(default)]
+        dynamic_fee: Option<String>,
+        #[serde(
+            default,
+            serialize_with = "serialize_option_bytes32",
+            deserialize_with = "deserialize_option_bytes32"
+        )]
+        recipient: Option<[u8; 32]>,
+    },
+
+    DynamicFeeQuote {
+        kind: DynamicFeeKind,
+        #[serde(
+            serialize_with = "serialize_bytes32",
+            deserialize_with = "deserialize_bytes32"
+        )]
+        sender: [u8; 32],
+        #[serde(default, deserialize_with = "opt_str_or_u32")]
+        product_id: Option<u32>,
+        #[serde(
+            default,
+            serialize_with = "serialize_option_bytes32",
+            deserialize_with = "deserialize_option_bytes32"
+        )]
+        recipient: Option<[u8; 32]>,
     },
 
     MaxNlpMintable {
@@ -324,6 +349,12 @@ pub enum Execute {
         signature: Vec<u8>,
         spot_leverage: Option<bool>,
         sequencer_risk_check: Option<bool>,
+        #[serde(
+            default,
+            serialize_with = "serialize_option_i128",
+            deserialize_with = "deserialize_option_i128"
+        )]
+        max_fee_x18: Option<i128>,
     },
     PlaceOrder(PlaceOrder),
     CancelOrders {
@@ -396,6 +427,37 @@ pub enum Execute {
         )]
         signature: Vec<u8>,
     },
+    TransferQuoteV2 {
+        tx: TransferQuote,
+        #[serde(
+            serialize_with = "serialize_vec_u8",
+            deserialize_with = "deserialize_vec_u8"
+        )]
+        signature: Vec<u8>,
+        #[serde(
+            serialize_with = "serialize_i128",
+            deserialize_with = "deserialize_i128"
+        )]
+        max_fee_x18: i128,
+    },
+
+    VenueDeposit {
+        tx: VenueDeposit,
+        #[serde(
+            serialize_with = "serialize_vec_u8",
+            deserialize_with = "deserialize_vec_u8"
+        )]
+        signature: Vec<u8>,
+    },
+
+    VenueTransfer {
+        tx: VenueTransfer,
+        #[serde(
+            serialize_with = "serialize_vec_u8",
+            deserialize_with = "deserialize_vec_u8"
+        )]
+        signature: Vec<u8>,
+    },
 
     MintNlp {
         tx: MintNlp,
@@ -414,6 +476,57 @@ pub enum Execute {
         )]
         signature: Vec<u8>,
     },
+}
+
+#[derive(
+    Archive,
+    RkyvDeserialize,
+    RkyvSerialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+)]
+#[archive(check_bytes)]
+#[serde(rename_all = "snake_case")]
+pub enum DynamicFeeKind {
+    Withdrawal,
+    TransferQuote,
+}
+
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct FeeWindowConfig {
+    pub window_secs: u64,
+    pub free_count: u64,
+    pub full_count: u64,
+}
+
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct DynamicFeeConfig {
+    pub windows: Vec<FeeWindowConfig>,
+    pub curve_power: u32,
+}
+
+impl Default for DynamicFeeConfig {
+    fn default() -> Self {
+        Self {
+            windows: vec![FeeWindowConfig {
+                window_secs: 60,
+                free_count: 0,
+                full_count: 1,
+            }],
+            curve_power: 1,
+        }
+    }
 }
 
 #[derive(
@@ -1097,6 +1210,35 @@ pub struct MaxWithdrawableResponse {
         deserialize_with = "deserialize_i128"
     )]
     pub max_withdrawable: i128,
+    #[serde(
+        serialize_with = "serialize_option_i128",
+        deserialize_with = "deserialize_option_i128"
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub fee_x18: Option<i128>,
+}
+
+#[derive(
+    Archive, RkyvDeserialize, RkyvSerialize, Clone, Debug, Eq, PartialEq, Serialize, Deserialize,
+)]
+#[archive(check_bytes)]
+pub struct DynamicFeeQuoteResponse {
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub required_fee_x18: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub fee_cap_x18: i128,
+    #[serde(
+        serialize_with = "serialize_i128",
+        deserialize_with = "deserialize_i128"
+    )]
+    pub pressure_x18: i128,
 }
 
 #[derive(
@@ -1673,6 +1815,7 @@ pub enum QueryResponseData {
     EdgeAllProducts(EdgeAllProductsResponse),
     MaxOrderSize(MaxOrderSizeResponse),
     MaxWithdrawable(MaxWithdrawableResponse),
+    DynamicFeeQuote(DynamicFeeQuoteResponse),
     MaxNlpMintable(MaxNlpMintableResponse),
     MaxNlpBurnable(MaxNlpBurnableResponse),
     HealthGroups(HealthGroupsResponse),
@@ -1744,6 +1887,7 @@ pub enum ExecuteResponseData {
     CancelProductOrders(CancelOrdersResponse),
     MatchOrdersOtc(MatchOrdersOtcResponse),
     MatchOrdersOtcs(MatchOrdersOtcsResponse),
+    DynamicFeeConfig(DynamicFeeConfig),
 }
 
 #[derive(

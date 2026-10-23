@@ -1,7 +1,7 @@
 use crate::core::query::NadoQuery;
 use crate::utils::nonce::default_recv_time;
 use crate::{build_and_call, nado_builder};
-use ethers::types::Bytes;
+use alloy_primitives::Bytes;
 use eyre::Result;
 
 use crate::eip712_structs;

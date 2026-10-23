@@ -5,7 +5,7 @@ use crate::eip712_structs::TransferQuote;
 use crate::utils::client_error::none_error;
 
 use crate::core::execute::NadoExecute;
-use crate::{build_and_call, fields_to_vars, nado_builder};
+use crate::{fields_to_vars, nado_builder};
 
 nado_builder!(
     TransferQuoteBuilder,
@@ -13,9 +13,16 @@ nado_builder!(
     recipient: [u8; 32],
     linked_sender: [u8; 32],
     amount: u128,
-    nonce: u64;
+    nonce: u64,
+    max_fee_x18: i128;
 
-    build_and_call!(self, execute, transfer_quote => (), async_build);
+    pub async fn execute(&self) -> Result<()> {
+        let tx = self.build().await?;
+        match self.max_fee_x18 {
+            Some(max_fee_x18) => self.nado.transfer_quote_v2(tx, max_fee_x18).await,
+            None => self.nado.transfer_quote(tx).await,
+        }
+    }
 
     pub async fn build(&self) -> Result<TransferQuote> {
         let default_sender = self.nado.subaccount()?;

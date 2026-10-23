@@ -1,4 +1,4 @@
-use ethers::types::{I256, U256};
+use alloy_primitives::{I256, U256};
 use eyre::{eyre, Result};
 
 pub const ONE_X18: i128 = 1000000000000000000;
@@ -16,6 +16,18 @@ pub const ONE_X6: i128 = 1_000_000;
 pub const ONE_X12: i128 = 1_000_000_000_000;
 
 const UONE: u128 = 1000000000000000000;
+
+fn i256(x: i128) -> I256 {
+    I256::try_from(x).unwrap()
+}
+
+fn low_i128(x: I256) -> i128 {
+    x.into_raw().wrapping_to::<u128>() as i128
+}
+
+fn two_pow_127() -> I256 {
+    I256::from_raw(U256::from(1u8) << 127)
+}
 
 fn signed_to_unsigned(x: i128, y: i128) -> (u128, u128, i128) {
     if x >= 0 && y >= 0 {
@@ -100,7 +112,7 @@ pub fn div_x18(x: i128, y: i128) -> i128 {
     if x <= UONE {
         ret += x * UONE / y;
     } else {
-        ret += (U256::from(x) * U256::from(UONE) / U256::from(y)).low_u128()
+        ret += (U256::from(x) * U256::from(UONE) / U256::from(y)).wrapping_to::<u128>()
     }
     (ret as i128) * sign
 }
@@ -119,7 +131,7 @@ pub fn sqrt_x18(x: i128) -> i128 {
 }
 
 pub fn mul_div_x18(x: i128, y: i128, z: i128) -> i128 {
-    (I256::from(x) * I256::from(y) / I256::from(z)).low_i128()
+    low_i128(i256(x) * i256(y) / i256(z))
 }
 
 pub fn x18_to_f64_mil(x: i128) -> f64 {
@@ -165,13 +177,15 @@ pub fn f64_to_x18(x: f64) -> i128 {
 }
 
 pub fn split_i256(x: I256) -> (i128, i128) {
-    let base = I256::from(2).pow(127);
-    ((x / base).as_i128(), (x % base).as_i128())
+    let base = two_pow_127();
+    (
+        i128::try_from(x / base).unwrap(),
+        i128::try_from(x % base).unwrap(),
+    )
 }
 
 pub fn merge_i128(x: i128, y: i128) -> I256 {
-    let base = I256::from(2).pow(127);
-    I256::from(x) * base + I256::from(y)
+    i256(x) * two_pow_127() + i256(y)
 }
 
 pub fn i256_to_f64(x: I256) -> f64 {
@@ -304,11 +318,13 @@ impl TryMath for i128 {
     }
 
     fn try_mul_x18(self, v: i128) -> Result<i128> {
-        Ok((I256::from(self) * I256::from(v) / I256::exp10(18)).as_i128())
+        i128::try_from(i256(self) * i256(v) / I256::exp10(18))
+            .map_err(|_| eyre!("Overflow: mul_x18"))
     }
 
     fn try_div_x18(self, v: i128) -> Result<i128> {
-        Ok((I256::from(self) * I256::exp10(18) / I256::from(v)).as_i128())
+        i128::try_from(i256(self) * I256::exp10(18) / i256(v))
+            .map_err(|_| eyre!("Overflow: div_x18"))
     }
 
     fn try_sqrt_x18(self) -> Result<i128> {
@@ -537,6 +553,107 @@ mod tests {
             let x = (x >> (splitmix64(&mut state) % 128)) as i128;
             check(x);
             check(x.wrapping_neg());
+        }
+    }
+
+    #[test]
+    fn try_mul_div_x18_match_wrapping_versions_in_range() {
+        let mut state = 0x7A11u64;
+        for _ in 0..500_000 {
+            let x = (splitmix64(&mut state) as u128) << 64 | splitmix64(&mut state) as u128;
+            let y = (splitmix64(&mut state) as u128) << 64 | splitmix64(&mut state) as u128;
+            // |x|,|y| < 2^68 keeps x*y/1e18 and x*1e18/y inside i128 for |y| >= 2^40
+            let x = (x >> 60) as i128
+                * if splitmix64(&mut state).is_multiple_of(2) {
+                    1
+                } else {
+                    -1
+                };
+            let y = ((y >> 60) as i128 | 1 << 40)
+                * if splitmix64(&mut state).is_multiple_of(2) {
+                    1
+                } else {
+                    -1
+                };
+            assert_eq!(x.try_mul_x18(y).unwrap(), mul_x18(x, y), "x={x} y={y}");
+            assert_eq!(x.try_div_x18(y).unwrap(), div_x18(x, y), "x={x} y={y}");
+        }
+        assert_eq!(i128::MAX.try_mul_x18(ONE_X18).unwrap(), i128::MAX);
+        assert_eq!(i128::MIN.try_mul_x18(ONE_X18).unwrap(), i128::MIN);
+        assert_eq!(i128::MAX.try_div_x18(ONE_X18).unwrap(), i128::MAX);
+        assert_eq!(i128::MIN.try_div_x18(ONE_X18).unwrap(), i128::MIN);
+    }
+
+    #[test]
+    fn try_mul_div_x18_err_on_overflow() {
+        assert!(i128::MAX.try_mul_x18(2 * ONE_X18).is_err());
+        assert!(i128::MIN.try_mul_x18(-ONE_X18).is_err());
+        assert!((ONE_X18 << 100).try_mul_x18(ONE_X18 << 100).is_err());
+        assert!(i128::MAX.try_div_x18(ONE_X18 / 2).is_err());
+        assert!(i128::MIN.try_div_x18(-1).is_err());
+        assert!(ONE_X18.try_div_x18(1).unwrap() == ONE_X18 * ONE_X18);
+        assert!((ONE_X18 << 10).try_div_x18(1).is_err());
+    }
+
+    #[test]
+    fn mul_div_x18_truncates_toward_zero_and_wraps_to_low_128_bits() {
+        assert_eq!(
+            mul_div_x18(-7 * ONE_X18, 3 * ONE_X18, ONE_X18),
+            -21 * ONE_X18
+        );
+        assert_eq!(mul_div_x18(7, 1, 2), 3);
+        assert_eq!(mul_div_x18(-7, 1, 2), -3);
+        // 2^128 - 2 keeps only its low 128 bits, reinterpreted as i128
+        assert_eq!(mul_div_x18(i128::MAX, 2, 1), -2);
+        assert_eq!(mul_div_x18(i128::MIN, 2, 1), 0);
+    }
+
+    #[test]
+    fn split_merge_i128_round_trip() {
+        let base = two_pow_127();
+        assert_eq!(base, I256::from_raw(U256::from(1u8) << 127));
+        for v in [
+            I256::ZERO,
+            I256::ONE,
+            I256::MINUS_ONE,
+            i256(i128::MAX),
+            i256(i128::MIN),
+            i256(i128::MAX) * base,
+            i256(i128::MIN) * base + i256(-(ONE_X18)),
+        ] {
+            let (high, low) = split_i256(v);
+            assert_eq!(merge_i128(high, low), v, "v={v}");
+        }
+        let mut state = 0x5E11u64;
+        for _ in 0..500_000 {
+            let limbs = [
+                splitmix64(&mut state),
+                splitmix64(&mut state),
+                splitmix64(&mut state),
+                splitmix64(&mut state),
+            ];
+            // |v| < 2^254 so the high half fits in i128
+            let v = I256::from_raw(U256::from_limbs(limbs)) >> (splitmix64(&mut state) % 250 + 2);
+            let (high, low) = split_i256(v);
+            assert_eq!(merge_i128(high, low), v, "v={v}");
+            assert!(
+                high.signum() * low.signum() >= 0,
+                "v={v} high={high} low={low}"
+            );
+            assert_eq!(i256_to_f64(i256(low)), x18_to_f64(low));
+
+            let x = (splitmix64(&mut state) as u128) << 64 | splitmix64(&mut state) as u128;
+            let x = (x >> (splitmix64(&mut state) % 127 + 1)) as i128;
+            for (h, l) in [
+                (x, x),
+                (-x, -x),
+                (x, 0),
+                (0, -x),
+                (i128::MAX, i128::MAX),
+                (i128::MIN, i128::MIN + 1),
+            ] {
+                assert_eq!(split_i256(merge_i128(h, l)), (h, l), "h={h} l={l}");
+            }
         }
     }
 }

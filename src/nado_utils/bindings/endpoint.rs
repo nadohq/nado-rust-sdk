@@ -39,6 +39,22 @@ sol! {
         }
 
         #[derive(serde::Serialize, serde::Deserialize)]
+        struct SignedOrderV2 {
+            Order order;
+            CompactSignature signature;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
+        struct MatchOrdersV2 {
+            SignedOrderV2 taker;
+            SignedOrderV2 maker;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_i128", deserialize_with = "crate::serialize_utils::deserialize_i128")]
+            int128 taker_amount_delta;
+            uint32 product_id;
+            uint64 control_flags;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
         struct Times {
             #[serde(serialize_with = "crate::serialize_utils::serialize_u128", deserialize_with = "crate::serialize_utils::deserialize_u128")]
             uint128 perp_time;
@@ -192,6 +208,17 @@ sol! {
         }
 
         #[derive(serde::Serialize, serde::Deserialize)]
+        struct Deleverage {
+            bytes32 subaccount;
+            bytes32 counterparty;
+            uint32 product_id;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_i128", deserialize_with = "crate::serialize_utils::deserialize_i128")]
+            int128 amount;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_i128", deserialize_with = "crate::serialize_utils::deserialize_i128")]
+            int128 price_x18;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
         struct LinkSigner {
             bytes32 sender;
             bytes32 signer;
@@ -301,6 +328,14 @@ sol! {
         }
 
         #[derive(serde::Serialize, serde::Deserialize)]
+        struct SignedTransferQuoteV2 {
+            TransferQuote tx;
+            CompactSignature signature;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_i128", deserialize_with = "crate::serialize_utils::deserialize_i128")]
+            int128 fee_x18;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
         struct SignedWithdrawCollateral {
             WithdrawCollateral tx;
             bytes signature;
@@ -309,6 +344,22 @@ sol! {
         #[derive(serde::Serialize, serde::Deserialize)]
         struct SignedWithdrawCollateralV2 {
             WithdrawCollateralV2 tx;
+            CompactSignature signature;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_i128", deserialize_with = "crate::serialize_utils::deserialize_i128")]
+            int128 fee_x18;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
+        struct SignedVenueDeposit {
+            VenueDeposit tx;
+            CompactSignature signature;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_i128", deserialize_with = "crate::serialize_utils::deserialize_i128")]
+            int128 fee_x18;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
+        struct SignedVenueTransfer {
+            VenueTransfer tx;
             CompactSignature signature;
             #[serde(serialize_with = "crate::serialize_utils::serialize_i128", deserialize_with = "crate::serialize_utils::deserialize_i128")]
             int128 fee_x18;
@@ -386,6 +437,45 @@ sol! {
         }
 
         #[derive(serde::Serialize, serde::Deserialize)]
+        struct UpdateVenue {
+            uint32 venue_id;
+            address operator;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
+        struct Venue {
+            uint32 venue_id;
+            bytes32 subaccount;
+            address operator;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
+        struct VenueDeposit {
+            bytes32 sender;
+            uint32 venue_id;
+            bytes32 recipient;
+            uint32 product_id;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_u128", deserialize_with = "crate::serialize_utils::deserialize_u128")]
+            uint128 amount;
+            uint64 nonce;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_u128", deserialize_with = "crate::serialize_utils::deserialize_u128")]
+            uint128 appendix;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
+        struct VenueTransfer {
+            uint32 from_venue_id;
+            uint32 to_venue_id;
+            bytes32 recipient;
+            uint32 product_id;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_u128", deserialize_with = "crate::serialize_utils::deserialize_u128")]
+            uint128 amount;
+            uint64 nonce;
+            #[serde(serialize_with = "crate::serialize_utils::serialize_u128", deserialize_with = "crate::serialize_utils::deserialize_u128")]
+            uint128 appendix;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
         struct WithdrawCollateral {
             bytes32 sender;
             uint32 product_id;
@@ -438,6 +528,8 @@ sol! {
         function getOffchainExchange() external view returns (address);
         function getPriceX18(uint32 product_id) external returns (int128 price_x18);
         function getSequencer() external view returns (address);
+        function getVenueOperator(uint32 venue_id) external view returns (address);
+        function getVenues() external view returns (Venue[]);
         function getSequencerFee(uint32 product_id) external view returns (int128);
         function getSlots() external pure returns (uint256 n_submissions_slot);
         function getSlowModeTx(uint64 idx) external view returns (SlowModeTx, uint64, uint64);
@@ -452,8 +544,10 @@ sol! {
         function manualAssert(ManualAssert p) external pure returns (ManualAssert);
         function matchOrders(MatchOrders p) external pure returns (MatchOrders);
         function matchOrdersWithAmount(MatchOrdersWithAmount p) external pure returns (MatchOrdersWithAmount);
+        function matchOrdersV2(MatchOrdersV2 p) external pure returns (MatchOrdersV2);
         function nSubmissions() external view returns (uint64);
         function nlpPools(uint256) external view returns (uint64 pool_id, bytes32 subaccount, address owner, uint128 balance_weight_x18);
+        function venues(uint256) external view returns (uint32 venue_id, bytes32 subaccount, address operator);
         function owner() external view returns (address);
         function perpTick(PerpTick p) external pure returns (PerpTick);
         function processSlowModeTransaction(address sender, bytes transaction) external;
@@ -477,6 +571,7 @@ sol! {
         function signedMintNlp(SignedMintNlp p) external pure returns (SignedMintNlp);
         function signedOrder(SignedOrder p) external pure returns (SignedOrder);
         function signedTransferQuote(SignedTransferQuote p) external pure returns (SignedTransferQuote);
+        function signedTransferQuoteV2(SignedTransferQuoteV2 p) external pure returns (SignedTransferQuoteV2);
         function signedWithdrawCollateral(SignedWithdrawCollateral p) external pure returns (SignedWithdrawCollateral);
         function signedWithdrawCollateralV2(SignedWithdrawCollateralV2 p) external pure returns (SignedWithdrawCollateralV2);
         function spotTick(SpotTick p) external pure returns (SpotTick);
@@ -505,6 +600,7 @@ sol! {
         function upgradeEndpointTx(address _endpoint_tx) external;
         function forceRebalanceNlpPool(ForceRebalanceNlpPool p) external pure returns (ForceRebalanceNlpPool);
         function nlpProfitShare(NlpProfitShare p) external pure returns (NlpProfitShare);
+        function deleverage(Deleverage p) external pure returns (Deleverage);
     }
 }
 pub use Endpoint::*;

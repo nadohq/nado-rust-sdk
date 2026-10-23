@@ -12,7 +12,9 @@ nado_builder!(
     NadoQuery,
     subaccount: [u8; 32],
     product_id: u32,
-    spot_leverage: bool;
+    spot_leverage: bool,
+    dynamic_fee: bool,
+    recipient: [u8; 32];
 
     build_and_call!(self, query, get_max_withdrawable =>MaxWithdrawableResponse);
 
@@ -22,6 +24,8 @@ nado_builder!(
             sender: subaccount,
             product_id,
             spot_leverage: optional_bool_to_string(self.spot_leverage),
+            dynamic_fee: optional_bool_to_string(self.dynamic_fee),
+            recipient: self.recipient,
         })
     }
 );

@@ -1,6 +1,7 @@
 pub mod clearinghouse;
 pub mod clearinghouse_liq;
 pub mod contract_owner;
+pub mod contract_owner_ext;
 pub mod endpoint;
 pub mod gas_info;
 pub mod mock_erc20;

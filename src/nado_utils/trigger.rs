@@ -1,8 +1,10 @@
 use crate::eip712_structs::{Cancellation, DependencyUpdate, ListTriggerOrders};
 use crate::eip712_structs::{CancellationProducts, Order};
 use crate::engine::{ExecuteResponse, PlaceOrder, Status};
-use crate::serialize_utils::{deserialize_i128, serialize_i128, WrappedBytes32, WrappedI128};
-use ethers::types::{Bytes, H256};
+use crate::serialize_utils::{
+    deserialize_i128, serialize_i128, WrappedBytes32, WrappedI128, WrappedVecU8,
+};
+use alloy_primitives::{Bytes, B256};
 use eyre::Result;
 use serde::{Deserialize, Serialize};
 
@@ -95,7 +97,7 @@ pub enum TriggerCriteria {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Dependency {
-    pub digest: H256,
+    pub digest: B256,
     pub on_partial_fill: bool, // trigger on partial fill
 }
 
@@ -265,7 +267,7 @@ pub struct PlaceTriggerOrder {
     pub spot_leverage: Option<bool>,
     pub borrow_margin: Option<bool>,
     pub trigger: TriggerCriteria,
-    pub digest: Option<H256>,
+    pub digest: Option<B256>,
     pub id: Option<u64>,
 }
 
@@ -286,8 +288,13 @@ impl PlaceTriggerOrder {
         bincode::serialize(self).unwrap()
     }
 
+    // v1 (hex-string) first: it rejects native bytes, but the native shape would accept a hex
+    // string as a garbage signature when `digest` is None
     pub fn from_order_data(data: &[u8]) -> Self {
-        bincode::deserialize(data).unwrap()
+        bincode::deserialize::<PlaceTriggerOrderV1>(data)
+            .map(Self::from)
+            .or_else(|_| bincode::deserialize(data))
+            .unwrap()
     }
 
     pub fn expiration(&self) -> u64 {
@@ -380,7 +387,7 @@ pub struct ListTriggerOrdersResponse {
 }
 
 impl ListTriggerOrdersResponse {
-    pub fn contains_digest(&self, digest: H256) -> bool {
+    pub fn contains_digest(&self, digest: B256) -> bool {
         self.orders
             .iter()
             .any(|order| order.order.digest == Some(digest))
@@ -446,4 +453,63 @@ pub struct QueryResponse {
     pub error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub request_type: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct DependencyV1 {
+    digest: WrappedBytes32,
+    on_partial_fill: bool,
+}
+
+#[derive(Deserialize)]
+enum TriggerCriteriaV1 {
+    PriceTrigger {
+        price_requirement: PriceRequirement,
+        dependency: Option<DependencyV1>,
+    },
+    TimeTrigger {
+        interval: u64,
+        amounts: Option<Vec<WrappedI128>>,
+    },
+}
+
+#[derive(Deserialize)]
+struct PlaceTriggerOrderV1 {
+    order: Order,
+    signature: WrappedVecU8,
+    product_id: u32,
+    spot_leverage: Option<bool>,
+    borrow_margin: Option<bool>,
+    trigger: TriggerCriteriaV1,
+    digest: Option<WrappedBytes32>,
+    id: Option<u64>,
+}
+
+impl From<PlaceTriggerOrderV1> for PlaceTriggerOrder {
+    fn from(o: PlaceTriggerOrderV1) -> Self {
+        PlaceTriggerOrder {
+            order: o.order,
+            signature: Bytes::from(o.signature.0),
+            product_id: o.product_id,
+            spot_leverage: o.spot_leverage,
+            borrow_margin: o.borrow_margin,
+            trigger: match o.trigger {
+                TriggerCriteriaV1::PriceTrigger {
+                    price_requirement,
+                    dependency,
+                } => TriggerCriteria::PriceTrigger {
+                    price_requirement,
+                    dependency: dependency.map(|d| Dependency {
+                        digest: B256::from(d.digest.0),
+                        on_partial_fill: d.on_partial_fill,
+                    }),
+                },
+                TriggerCriteriaV1::TimeTrigger { interval, amounts } => {
+                    TriggerCriteria::TimeTrigger { interval, amounts }
+                }
+            },
+            digest: o.digest.map(|d| B256::from(d.0)),
+            id: o.id,
+        }
+    }
 }
