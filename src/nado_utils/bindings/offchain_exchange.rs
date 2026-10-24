@@ -38,6 +38,7 @@ sol! {
             address maker_linked_signer;
             #[serde(serialize_with = "crate::serialize_utils::serialize_i128", deserialize_with = "crate::serialize_utils::deserialize_i128")]
             int128 taker_amount_delta;
+            bool is_otc;
         }
 
         #[derive(serde::Serialize, serde::Deserialize)]

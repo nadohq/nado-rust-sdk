@@ -1,4 +1,4 @@
-use ethers::prelude::H256;
+use alloy_primitives::B256;
 
 use nado_sdk::math::{f64_to_x18, to_i128_x18};
 use nado_sdk::prelude::*;
@@ -25,7 +25,7 @@ async fn main() {
 
     let digest = place_order.digest.unwrap();
 
-    println!("digest: {:#x}", H256::from(digest));
+    println!("digest: {:#x}", B256::from(digest));
 
     client.place_order(place_order).await.unwrap();
 }

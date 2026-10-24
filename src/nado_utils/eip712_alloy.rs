@@ -6,8 +6,8 @@ use alloy_sol_types::SolStruct;
 use crate::eip712_structs::{
     BurnNlp, Cancellation, CancellationProducts, DependencyUpdate, LeaderboardAuthentication,
     LinkSigner, LiquidateSubaccount, ListTriggerOrders, MintNlp, NadoAuthentication, Order,
-    SocialAuthentication, StreamAuthentication, TransferQuote, WithdrawCollateral,
-    WithdrawCollateralV2,
+    SocialAuthentication, StreamAuthentication, TransferQuote, VenueDeposit, VenueTransfer,
+    WithdrawCollateral, WithdrawCollateralV2,
 };
 
 pub mod sol_types {
@@ -22,6 +22,8 @@ pub mod sol_types {
         struct MintNlp { bytes32 sender; uint128 quoteAmount; uint64 nonce; }
         struct BurnNlp { bytes32 sender; uint128 nlpAmount; uint64 nonce; }
         struct TransferQuote { bytes32 sender; bytes32 recipient; uint128 amount; uint64 nonce; }
+        struct VenueDeposit { bytes32 sender; uint32 venueId; bytes32 recipient; uint32 productId; uint128 amount; uint64 nonce; uint128 appendix; }
+        struct VenueTransfer { uint32 fromVenueId; uint32 toVenueId; bytes32 recipient; uint32 productId; uint128 amount; uint64 nonce; uint128 appendix; }
         struct ListTriggerOrders { bytes32 sender; uint64 recvTime; }
         struct DependencyUpdate { bytes32 sender; bytes32 oldDigest; bytes32 newDigest; uint64 nonce; }
         struct StreamAuthentication { bytes32 sender; uint64 expiration; }
@@ -180,6 +182,36 @@ impl NadoEip712 for TransferQuote {
             recipient: fb(self.recipient),
             amount: self.amount,
             nonce: self.nonce,
+        }
+    }
+}
+
+impl NadoEip712 for VenueDeposit {
+    type Sol = sol_types::VenueDeposit;
+    fn to_sol(&self) -> Self::Sol {
+        sol_types::VenueDeposit {
+            sender: fb(self.sender),
+            venueId: self.venueId,
+            recipient: fb(self.recipient),
+            productId: self.productId,
+            amount: self.amount,
+            nonce: self.nonce,
+            appendix: self.appendix,
+        }
+    }
+}
+
+impl NadoEip712 for VenueTransfer {
+    type Sol = sol_types::VenueTransfer;
+    fn to_sol(&self) -> Self::Sol {
+        sol_types::VenueTransfer {
+            fromVenueId: self.fromVenueId,
+            toVenueId: self.toVenueId,
+            recipient: fb(self.recipient),
+            productId: self.productId,
+            amount: self.amount,
+            nonce: self.nonce,
+            appendix: self.appendix,
         }
     }
 }

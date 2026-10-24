@@ -4,13 +4,13 @@ use serde::de::DeserializeOwned;
 
 use crate::engine::Query::Order;
 use crate::engine::{
-    AllProductsResponse, AssetsResponse, ContractsResponse, EngineStatus, FeeRatesResponse,
-    HealthGroupsResponse, InsuranceResponse, IsolatedPositionsResponse, LinkedSignerResponse,
-    MarketLiquidityResponse, MarketPairsParams, MarketPairsResponse, MarketPriceResponse,
-    MarketPricesResponse, MaxNlpBurnableResponse, MaxNlpMintableResponse, MaxOrderSizeResponse,
-    MaxWithdrawableResponse, NlpLockedBalancesResponse, NlpPoolInfoResponse, NoncesResponse,
-    OrderResponse, OrderbookParams, OrderbookResponse, Query, QueryResponseData, QueryV2,
-    SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse, Txn,
+    AllProductsResponse, AssetsResponse, ContractsResponse, DynamicFeeQuoteResponse, EngineStatus,
+    FeeRatesResponse, HealthGroupsResponse, InsuranceResponse, IsolatedPositionsResponse,
+    LinkedSignerResponse, MarketLiquidityResponse, MarketPairsParams, MarketPairsResponse,
+    MarketPriceResponse, MarketPricesResponse, MaxNlpBurnableResponse, MaxNlpMintableResponse,
+    MaxOrderSizeResponse, MaxWithdrawableResponse, NlpLockedBalancesResponse, NlpPoolInfoResponse,
+    NoncesResponse, OrderResponse, OrderbookParams, OrderbookResponse, Query, QueryResponseData,
+    QueryV2, SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse, Txn,
 };
 use crate::trigger;
 use crate::trigger::{ListTriggerOrdersResponse, ListTwapExecutionsResponse};
@@ -148,6 +148,14 @@ pub trait NadoQuery: NadoBase + Sync {
     ) -> Result<MaxWithdrawableResponse> {
         let query_response = self.query(max_withdrawable_query).await?;
         map_response!(query_response, QueryResponseData::MaxWithdrawable)
+    }
+
+    async fn get_dynamic_fee_quote(
+        &self,
+        dynamic_fee_quote_query: Query,
+    ) -> Result<DynamicFeeQuoteResponse> {
+        let query_response = self.query(dynamic_fee_quote_query).await?;
+        map_response!(query_response, QueryResponseData::DynamicFeeQuote)
     }
 
     async fn get_max_nlp_mintable(

@@ -1609,6 +1609,16 @@ pub struct PerpContractResponse {
     pub funding_rate: f64,
     pub next_funding_rate_timestamp: u64,
     pub price_change_percent_24h: f64,
+    #[serde(default)]
+    pub funding_interval_minutes: f64,
+    #[serde(default)]
+    pub long_open_interest: f64,
+    #[serde(default)]
+    pub long_open_interest_usd: f64,
+    #[serde(default)]
+    pub short_open_interest: f64,
+    #[serde(default)]
+    pub short_open_interest_usd: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -1675,7 +1685,7 @@ pub struct PortfolioHistoryResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PortfolioCalendarDay {
     #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
     pub date: u64,
@@ -1689,6 +1699,7 @@ pub struct PortfolioCalendarDay {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub struct PortfolioCalendarResponse {
     pub spot: Vec<PortfolioCalendarDay>,
     pub perp: Vec<PortfolioCalendarDay>,

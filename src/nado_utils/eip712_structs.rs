@@ -569,6 +569,90 @@ impl TransferQuote {
     }
 }
 
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
+#[archive(check_bytes)]
+#[allow(non_snake_case)]
+pub struct VenueDeposit {
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub sender: [u8; 32],
+    pub venueId: u32,
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub recipient: [u8; 32],
+    pub productId: u32,
+    #[serde(
+        serialize_with = "serialize_u128",
+        deserialize_with = "deserialize_u128"
+    )]
+    pub amount: u128,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub nonce: u64,
+    #[serde(
+        serialize_with = "serialize_u128",
+        deserialize_with = "deserialize_u128"
+    )]
+    pub appendix: u128,
+}
+
+impl VenueDeposit {
+    pub fn to_binding(&self) -> endpoint::VenueDeposit {
+        endpoint::VenueDeposit {
+            sender: self.sender.into(),
+            venue_id: self.venueId,
+            recipient: self.recipient.into(),
+            product_id: self.productId,
+            amount: self.amount,
+            nonce: self.nonce,
+            appendix: self.appendix,
+        }
+    }
+}
+
+#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
+#[archive(check_bytes)]
+#[allow(non_snake_case)]
+pub struct VenueTransfer {
+    pub fromVenueId: u32,
+    pub toVenueId: u32,
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub recipient: [u8; 32],
+    pub productId: u32,
+    #[serde(
+        serialize_with = "serialize_u128",
+        deserialize_with = "deserialize_u128"
+    )]
+    pub amount: u128,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub nonce: u64,
+    #[serde(
+        serialize_with = "serialize_u128",
+        deserialize_with = "deserialize_u128"
+    )]
+    pub appendix: u128,
+}
+
+impl VenueTransfer {
+    pub fn to_binding(&self) -> endpoint::VenueTransfer {
+        endpoint::VenueTransfer {
+            from_venue_id: self.fromVenueId,
+            to_venue_id: self.toVenueId,
+            recipient: self.recipient.into(),
+            product_id: self.productId,
+            amount: self.amount,
+            nonce: self.nonce,
+            appendix: self.appendix,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
 #[allow(non_snake_case)]
 pub struct ListTriggerOrders {

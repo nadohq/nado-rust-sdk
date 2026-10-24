@@ -6,14 +6,9 @@ sol! {
     contract ContractOwner {
         function creditDepositV1(bytes32 subaccount) external;
         function wrapVaultAsset(bytes32 subaccount, uint32 productId) external;
-        function addNlpPool(address owner, uint128 balanceWeightX18) external;
-        function updateNlpPool(uint64 poolId, address owner, uint128 weight) external;
-        function deleteNlpPool(uint64 poolId) external;
         function isDirectDepositV1Ready(address recipient, bool isFirstDeposit) external returns (bool);
         function isWrapVaultAssetReady(address recipient, uint32 productId, bool isFirstDeposit) external returns (bool);
-        function forceRebalanceNlpPool(int128[] nlp_pool_rebalance_x18) external;
-        function nlpProfitShare(uint64 pool_id, bytes32 recipient, uint128 amount) external;
-        function updateTierFeeRates(uint32[] tier, uint32[] productId, int128[] makerRateX18, int128[] takerRateX18) external;
-        function updateBuilders(uint32[] builderIds, address[] owners, uint32[] defaultFeeTiers, int128[] lowestFeeRates, int128[] highestFeeRates) external;
+        function updateVenue(uint32 venueId, address operator) external;
+        function getContractOwnerExt() external view returns (address);
     }
 }

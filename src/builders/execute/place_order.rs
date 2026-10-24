@@ -1,4 +1,4 @@
-use ethers_core::types::{Bytes as EthersBytes, H256};
+use alloy_primitives::{Bytes, B256};
 use eyre::{eyre, Result};
 
 use crate::bindings::endpoint;
@@ -74,13 +74,14 @@ nado_builder!(
         let digest = self.get_digest(&order)?;
         Ok(PlaceTriggerOrder {
             order,
-            signature: EthersBytes::from(signature),
+            signature: Bytes::from(signature),
             product_id,
-            digest: Some(H256::from(digest)),
+            digest: Some(B256::from(digest)),
             spot_leverage: self.spot_leverage,
             borrow_margin: self.borrow_margin,
             trigger,
-            id: self.id
+            id: self.id,
+            routing_mode: Default::default(),
         })
     }
 

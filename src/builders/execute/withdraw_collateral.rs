@@ -17,13 +17,14 @@ nado_builder!(
     linked_sender: [u8; 32],
     send_to: Address,
     appendix: u128,
-    spot_leverage: bool;
+    spot_leverage: bool,
+    max_fee_x18: i128;
 
     // we do not use macro here because of extra required argument
     pub async fn execute(&self) -> Result<()> {
-        if self.send_to.is_some() || self.appendix.is_some() {
+        if self.send_to.is_some() || self.appendix.is_some() || self.max_fee_x18.is_some() {
             self.nado
-                .withdraw_collateral_v2(self.build_v2().await?, self.spot_leverage)
+                .withdraw_collateral_v2(self.build_v2().await?, self.spot_leverage, self.max_fee_x18)
                 .await
         } else {
             self.nado

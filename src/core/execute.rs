@@ -1,7 +1,6 @@
 use alloy::rpc::types::TransactionReceipt;
-use alloy_primitives::{Address, U256};
+use alloy_primitives::{Address, Bytes, U256};
 use async_trait::async_trait;
-use ethers_core::types::Bytes as EthersBytes;
 use eyre::{eyre, Result};
 
 use crate::bindings::endpoint;
@@ -11,7 +10,7 @@ use crate::builders::execute::slow_mode::SubmitSlowModeTxParams;
 use crate::core::query::NadoQuery;
 use crate::eip712_structs::{
     BurnNlp, Cancellation, CancellationProducts, DependencyUpdate, LinkSigner, LiquidateSubaccount,
-    MintNlp, TransferQuote, WithdrawCollateral, WithdrawCollateralV2,
+    MintNlp, TransferQuote, VenueDeposit, VenueTransfer, WithdrawCollateral, WithdrawCollateralV2,
 };
 use crate::engine::{
     CancelOrdersResponse, Execute, ExecuteResponseData, PlaceOrder, PlaceOrderResponse,
@@ -79,7 +78,7 @@ pub trait NadoExecute: NadoQuery {
     }
 
     async fn cancel_trigger_orders(&self, tx: Cancellation) -> Result<()> {
-        let signature: EthersBytes = self.endpoint_signature(&tx)?.into();
+        let signature: Bytes = self.endpoint_signature(&tx)?.into();
         let execute = trigger::Execute::CancelOrders { tx, signature };
         self.execute_trigger(execute).await?;
         Ok(())
@@ -102,7 +101,7 @@ pub trait NadoExecute: NadoQuery {
     }
 
     async fn cancel_product_trigger_orders(&self, tx: CancellationProducts) -> Result<()> {
-        let signature: EthersBytes = self.endpoint_signature(&tx)?.into();
+        let signature: Bytes = self.endpoint_signature(&tx)?.into();
         let execute = trigger::Execute::CancelProductOrders { tx, signature };
         self.execute_trigger(execute).await?;
         Ok(())
@@ -119,7 +118,7 @@ pub trait NadoExecute: NadoQuery {
             newDigest: new_digest,
             nonce: order_nonce(None),
         };
-        let signature: EthersBytes = self.endpoint_signature(&tx)?.into();
+        let signature: Bytes = self.endpoint_signature(&tx)?.into();
         let execute = trigger::Execute::UpdateDependency { tx, signature };
         let execute_response_data = self.execute_trigger(execute).await?;
         map_response_type!(execute_response_data, ExecuteResponseData::PlaceOrder => PlaceOrderResponse)
@@ -170,6 +169,7 @@ pub trait NadoExecute: NadoQuery {
         &self,
         tx: WithdrawCollateralV2,
         spot_leverage: Option<bool>,
+        max_fee_x18: Option<i128>,
     ) -> Result<()> {
         let signature = self.endpoint_signature(&tx)?;
         let execute = Execute::WithdrawCollateralV2 {
@@ -177,6 +177,7 @@ pub trait NadoExecute: NadoQuery {
             signature,
             spot_leverage,
             sequencer_risk_check: None,
+            max_fee_x18,
         };
         self.execute(execute).await?;
         Ok(())
@@ -203,6 +204,31 @@ pub trait NadoExecute: NadoQuery {
     async fn transfer_quote(&self, tx: TransferQuote) -> Result<()> {
         let signature = self.endpoint_signature(&tx)?;
         let execute = Execute::TransferQuote { tx, signature };
+        self.execute(execute).await?;
+        Ok(())
+    }
+
+    async fn transfer_quote_v2(&self, tx: TransferQuote, max_fee_x18: i128) -> Result<()> {
+        let signature = self.endpoint_signature(&tx)?;
+        let execute = Execute::TransferQuoteV2 {
+            tx,
+            signature,
+            max_fee_x18,
+        };
+        self.execute(execute).await?;
+        Ok(())
+    }
+
+    async fn venue_deposit(&self, tx: VenueDeposit) -> Result<()> {
+        let signature = self.endpoint_signature(&tx)?;
+        let execute = Execute::VenueDeposit { tx, signature };
+        self.execute(execute).await?;
+        Ok(())
+    }
+
+    async fn venue_transfer(&self, tx: VenueTransfer) -> Result<()> {
+        let signature = self.endpoint_signature(&tx)?;
+        let execute = Execute::VenueTransfer { tx, signature };
         self.execute(execute).await?;
         Ok(())
     }

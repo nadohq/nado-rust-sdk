@@ -1,3 +1,4 @@
+pub mod dynamic_fee_quote;
 pub mod max_nlp_burnable;
 pub mod max_nlp_mintable;
 pub mod max_order_size;

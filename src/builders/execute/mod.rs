@@ -9,4 +9,6 @@ pub mod mint_nlp;
 pub mod place_order;
 pub mod slow_mode;
 pub mod transfer_quote;
+pub mod venue_deposit;
+pub mod venue_transfer;
 pub mod withdraw_collateral;

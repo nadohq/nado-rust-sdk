@@ -3,7 +3,6 @@ use std::fmt::Debug;
 use alloy::sol_types::SolValue;
 use alloy_primitives::{Address, Bytes, U256};
 use alloy_sol_types::Eip712Domain as AlloyEip712Domain;
-use ethers_core::types::{H160, U256 as EthersU256};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
@@ -52,6 +51,12 @@ pub enum TxType {
     WithdrawCollateralV2 = 32,
     ForceRebalanceNlpPool = 33,
     NlpProfitShare = 34,
+    Deleverage = 35,
+    TransferQuoteV2 = 36,
+    VenueDeposit = 37,
+    VenueTransfer = 38,
+    UpdateVenue = 39,
+    MatchOrdersV2 = 40,
 }
 
 impl TxType {
@@ -92,6 +97,12 @@ impl TxType {
             32 => Self::WithdrawCollateralV2,
             33 => Self::ForceRebalanceNlpPool,
             34 => Self::NlpProfitShare,
+            35 => Self::Deleverage,
+            36 => Self::TransferQuoteV2,
+            37 => Self::VenueDeposit,
+            38 => Self::VenueTransfer,
+            39 => Self::UpdateVenue,
+            40 => Self::MatchOrdersV2,
             _ => panic!("Invalid TxType"),
         }
     }
@@ -127,14 +138,6 @@ impl IntoAlloyU256 for U256 {
     }
 }
 
-impl IntoAlloyU256 for EthersU256 {
-    fn into_alloy_u256(self) -> U256 {
-        let mut bytes = [0u8; 32];
-        self.to_big_endian(&mut bytes);
-        U256::from_be_bytes(bytes)
-    }
-}
-
 pub trait IntoAlloyAddress {
     fn into_alloy_address(self) -> Address;
 }
@@ -142,12 +145,6 @@ pub trait IntoAlloyAddress {
 impl IntoAlloyAddress for Address {
     fn into_alloy_address(self) -> Address {
         self
-    }
-}
-
-impl IntoAlloyAddress for H160 {
-    fn into_alloy_address(self) -> Address {
-        Address::from_slice(self.as_bytes())
     }
 }
 
@@ -186,8 +183,10 @@ pub enum NadoTx {
 
     MatchOrders(endpoint::MatchOrders),
     MatchOrdersWithAmount(endpoint::MatchOrdersWithAmount),
+    MatchOrdersV2(endpoint::MatchOrdersV2),
     ExecuteSlowMode,
     TransferQuote(endpoint::TransferQuote),
+    TransferQuoteV2(endpoint::TransferQuote),
     RebalanceXWithdraw(endpoint::RebalanceXWithdraw),
     DumpFees,
     AssertCode(endpoint::AssertCode),
@@ -207,6 +206,10 @@ pub enum NadoTx {
     ClaimBuilderFee(endpoint::ClaimBuilderFee),
     ForceRebalanceNlpPool(endpoint::ForceRebalanceNlpPool),
     NlpProfitShare(endpoint::NlpProfitShare),
+    Deleverage(endpoint::Deleverage),
+    VenueDeposit(endpoint::VenueDeposit),
+    VenueTransfer(endpoint::VenueTransfer),
+    UpdateVenue(endpoint::UpdateVenue),
     Other,
 }
 
@@ -222,11 +225,13 @@ impl NadoTx {
             NadoTx::SettlePnl(_) => TxType::SettlePnl,
             NadoTx::MatchOrders(_) => TxType::MatchOrders,
             NadoTx::MatchOrdersWithAmount(_) => TxType::MatchOrdersWithAmount,
+            NadoTx::MatchOrdersV2(_) => TxType::MatchOrdersV2,
             NadoTx::ExecuteSlowMode => TxType::ExecuteSlowMode,
             NadoTx::ManualAssert(_) => TxType::ManualAssert,
             NadoTx::PerpTick(_) => TxType::PerpTick,
             NadoTx::LinkSigner(_) => TxType::LinkSigner,
             NadoTx::TransferQuote(_) => TxType::TransferQuote,
+            NadoTx::TransferQuoteV2(_) => TxType::TransferQuoteV2,
             NadoTx::RebalanceXWithdraw(_) => TxType::RebalanceXWithdraw,
             NadoTx::AssertCode(_) => TxType::AssertCode,
             NadoTx::WithdrawInsurance(_) => TxType::WithdrawInsurance,
@@ -246,7 +251,22 @@ impl NadoTx {
             NadoTx::ClaimBuilderFee(_) => TxType::ClaimBuilderFee,
             NadoTx::ForceRebalanceNlpPool(_) => TxType::ForceRebalanceNlpPool,
             NadoTx::NlpProfitShare(_) => TxType::NlpProfitShare,
+            NadoTx::Deleverage(_) => TxType::Deleverage,
+            NadoTx::VenueDeposit(_) => TxType::VenueDeposit,
+            NadoTx::VenueTransfer(_) => TxType::VenueTransfer,
+            NadoTx::UpdateVenue(_) => TxType::UpdateVenue,
             NadoTx::Other => panic!("Other is not a valid tx type"),
+        }
+    }
+
+    /// Any match type (6, 23 or 40) as the legacy struct. V2 signatures are
+    /// expanded to the 65-byte form.
+    pub fn into_match_orders(self) -> Option<endpoint::MatchOrders> {
+        match self {
+            NadoTx::MatchOrders(m) => Some(m),
+            NadoTx::MatchOrdersWithAmount(m) => Some(m.match_orders),
+            NadoTx::MatchOrdersV2(m) => Some(m.to_match_orders()),
+            _ => None,
         }
     }
 }

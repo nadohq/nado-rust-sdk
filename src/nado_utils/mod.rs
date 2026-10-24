@@ -1,10 +1,10 @@
-pub mod alloy_compat;
 pub mod bindings;
 pub mod eip712_alloy;
 pub mod eip712_structs;
 pub mod engine;
 pub mod indexer;
 pub mod isolated;
+pub mod match_orders_v2;
 pub mod math;
 pub mod product;
 pub mod provider;
