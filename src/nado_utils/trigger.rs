@@ -17,6 +17,17 @@ pub enum CancelReason {
     AccountHealth,
     IsolatedSubaccountClosed,
     DependentOrderCancelled,
+    ReduceOnlyCannotIncreasePosition,
+    OrderPlacementFailed,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OrderRoutingMode {
+    #[default]
+    ClobOnly,
+    OtcOnly,
+    SmartRouter,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -43,6 +54,9 @@ pub enum TriggerOrderStatus {
         executed: u32,
         total: u32,
     },
+    OtcPendingResolution {
+        deal_id: String,
+    },
 }
 
 impl TriggerOrderStatus {
@@ -56,6 +70,7 @@ impl TriggerOrderStatus {
             Self::WaitingDependency => TriggerOrderStatusType::WaitingDependency,
             Self::TwapExecuting { .. } => TriggerOrderStatusType::TwapExecuting,
             Self::TwapCompleted { .. } => TriggerOrderStatusType::TwapCompleted,
+            Self::OtcPendingResolution { .. } => TriggerOrderStatusType::OtcPendingResolution,
         }) as i32
     }
 
@@ -69,6 +84,7 @@ impl TriggerOrderStatus {
             "waiting_dependency" => Ok(5),
             "twap_executing" => Ok(6),
             "twap_completed" => Ok(7),
+            "otc_pending_resolution" => Ok(8),
             _ => Err(eyre::eyre!("Invalid status string")),
         }
     }
@@ -169,7 +185,7 @@ impl TriggerType {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TriggerOrderStatusType {
     Cancelled = 0,
@@ -180,9 +196,12 @@ pub enum TriggerOrderStatusType {
     WaitingDependency = 5,
     TwapExecuting = 6,
     TwapCompleted = 7,
+    OtcPendingResolution = 8,
 }
 
 impl TriggerOrderStatusType {
+    // deliberately excludes OtcPendingResolution: expiry pruning and user cancels must never
+    // overwrite a row whose OTC batch may already have settled
     pub fn pending() -> Vec<Self> {
         vec![
             Self::WaitingPrice,
@@ -269,6 +288,9 @@ pub struct PlaceTriggerOrder {
     pub trigger: TriggerCriteria,
     pub digest: Option<B256>,
     pub id: Option<u64>,
+    // must stay last: a row written before it is its exact prefix (see from_order_data)
+    #[serde(default)]
+    pub routing_mode: OrderRoutingMode,
 }
 
 impl PlaceTriggerOrder {
@@ -289,11 +311,13 @@ impl PlaceTriggerOrder {
     }
 
     // v1 (hex-string) first: it rejects native bytes, but the native shape would accept a hex
-    // string as a garbage signature when `digest` is None
+    // string as a garbage signature when `digest` is None. a row written before routing_mode is
+    // the current row minus its ClobOnly tag
     pub fn from_order_data(data: &[u8]) -> Self {
         bincode::deserialize::<PlaceTriggerOrderV1>(data)
             .map(Self::from)
             .or_else(|_| bincode::deserialize(data))
+            .or_else(|_| bincode::deserialize(&[data, &0u32.to_le_bytes()].concat()))
             .unwrap()
     }
 
@@ -510,6 +534,7 @@ impl From<PlaceTriggerOrderV1> for PlaceTriggerOrder {
             },
             digest: o.digest.map(|d| B256::from(d.0)),
             id: o.id,
+            routing_mode: OrderRoutingMode::ClobOnly,
         }
     }
 }

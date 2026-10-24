@@ -80,7 +80,8 @@ nado_builder!(
             spot_leverage: self.spot_leverage,
             borrow_margin: self.borrow_margin,
             trigger,
-            id: self.id
+            id: self.id,
+            routing_mode: Default::default(),
         })
     }
 
