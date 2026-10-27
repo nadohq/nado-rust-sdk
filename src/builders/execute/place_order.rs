@@ -144,9 +144,10 @@ nado_builder!(
         if reduce_only {
             appendix |= 1 << 11;
         }
-        if self.isolated.is_some() && self.isolated.unwrap() {
+        if self.isolated.unwrap_or(false) {
             appendix |= 1 << 8;
-            let margin_x6 = self.margin.unwrap() / ONE_X12;
+            let margin = self.margin.ok_or(none_error("margin"))?;
+            let margin_x6 = margin / ONE_X12;
             appendix |= (margin_x6 as u128) << 64;
         }
         appendix |= order_type.appendix_bit();
@@ -157,7 +158,7 @@ nado_builder!(
                 TriggerCriteria::PriceTrigger {..} => { appendix |= 1 << 12;},
                 TriggerCriteria::TimeTrigger {amounts, ..} => {
                     assert!(!self.isolated.unwrap_or(false), "time trigger orders cannot be isolated");
-                    let times = self.times.unwrap();
+                    let times = self.times.ok_or(none_error("times"))?;
                     let slippage_x6 = self.slippage_x6.ok_or(none_error("slippage_x6"))?;
 
                     appendix |= (times as u128) << 96;
@@ -175,8 +176,10 @@ nado_builder!(
             appendix |= (builder_fee_rate as u128) << 38;
         }
 
-        let default_sender = self.nado.subaccount()?;
-        let sender = self.linked_sender.unwrap_or(default_sender);
+        let sender = match self.linked_sender {
+            Some(sender) => sender,
+            None => self.nado.subaccount()?,
+        };
 
         Ok(eip712_structs::Order::from_binding(&endpoint::Order {
             sender: sender.into(),
@@ -205,3 +208,53 @@ fn random_digest() -> [u8; 32] {
 }
 
 const ORDER_VERSION: u8 = 1;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::eip712_structs::OrderType;
+    use crate::nado_client::NadoClient;
+    use crate::prelude::ClientMode;
+
+    #[test]
+    fn test_isolated_order_missing_margin_returns_error() {
+        let client = NadoClient::new(ClientMode::Test);
+        let builder = PlaceOrderBuilder::new(&client)
+            .product_id(1)
+            .amount(100)
+            .price_x18(2000)
+            .expiration(1000)
+            .reduce_only(false)
+            .order_type(OrderType::Default)
+            .linked_sender([1u8; 32])
+            .isolated(true);
+
+        // Missing margin should return Err, not panic
+        let result = builder.order_inner();
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "margin is None!");
+    }
+
+    #[test]
+    fn test_isolated_order_with_margin_succeeds() {
+        let client = NadoClient::new(ClientMode::Test);
+        let builder = PlaceOrderBuilder::new(&client)
+            .product_id(1)
+            .amount(100)
+            .price_x18(2000)
+            .expiration(1000)
+            .reduce_only(false)
+            .order_type(OrderType::Default)
+            .linked_sender([1u8; 32])
+            .isolated(true)
+            .margin(10_000_000_000_000); // 10 * 10^12
+
+        let order = builder.order_inner().unwrap();
+        // Bit 8 must be set for isolated
+        assert_ne!(order.appendix & (1 << 8), 0);
+        // Margin shifted by 64
+        let expected_margin_x6 = 10_000_000_000_000u128 / ONE_X12 as u128;
+        assert_eq!((order.appendix >> 64) & 0xFFFF_FFFF, expected_margin_x6);
+    }
+}
+
