@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0](https://github.com/nadohq/nado-rust-sdk/compare/v3.1.0...v4.0.0) - 2026-11-24
+
+### Other
+
+- v4.0.0 ([#49](https://github.com/nadohq/nado-rust-sdk/pull/49))
+- add contributing and security sections ([#48](https://github.com/nadohq/nado-rust-sdk/pull/48))
+- ignore .claude/ ([#47](https://github.com/nadohq/nado-rust-sdk/pull/47))
+- release v3.1.0 ([#46](https://github.com/nadohq/nado-rust-sdk/pull/46))
+
 ## [3.1.0](https://github.com/nadohq/nado-rust-sdk/compare/v3.0.0...v3.1.0) - 2026-11-24
 
 ### Other
