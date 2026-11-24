@@ -1,6 +1,8 @@
+use crate::builders::execute::add_order_signer::AddOrderSignerBuilder;
 use crate::builders::execute::burn_nlp::BurnNlpBuilder;
 use crate::builders::execute::cancellation::CancellationBuilder;
 use crate::builders::execute::cancellation_products::CancellationProductsBuilder;
+use crate::builders::execute::delete_order_signer::DeleteOrderSignerBuilder;
 use crate::builders::execute::deposit_collateral::DepositCollateralBuilder;
 use crate::builders::execute::deposit_insurance::DepositInsuranceBuilder;
 use crate::builders::execute::link_signer::LinkSignerBuilder;
@@ -73,6 +75,8 @@ pub trait NadoBuilder: NadoExecute + NadoIndexer {
     get_nado_builder!(mint_nlp_builder, MintNlpBuilder);
     get_nado_builder!(burn_nlp_builder, BurnNlpBuilder);
     get_nado_builder!(link_signer_builder, LinkSignerBuilder);
+    get_nado_builder!(add_order_signer_builder, AddOrderSignerBuilder);
+    get_nado_builder!(delete_order_signer_builder, DeleteOrderSignerBuilder);
     get_nado_builder!(transfer_quote_builder, TransferQuoteBuilder);
     get_nado_builder!(venue_deposit_builder, VenueDepositBuilder);
     get_nado_builder!(venue_transfer_builder, VenueTransferBuilder);

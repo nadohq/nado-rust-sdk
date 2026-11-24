@@ -12,10 +12,10 @@ use crate::indexer::{
     InterestAndFundingTicksResponse, IsolatedSubaccountsResponse, LinkedSignerRateLimitResponse,
     LinkedSignerResponse, MakerStatisticsResponse, MarketNetFeesResponse, MarketSnapshotsResponse,
     MatchesResponse, NlpFundingPaymentsResponse, NlpInterestPaymentsResponse, NlpSnapshotsResponse,
-    OraclePriceResponse, OrdersResponse, PerpContractResponse, PerpPriceResponse,
-    PortfolioCalendarResponse, PortfolioHistoryResponse, PortfolioResponse, PositionsResponse,
-    ProductSnapshot, ProductsResponse, Query, QueryV2, QuotePriceResponse, SubaccountsResponse,
-    TickerResponse, TickersParams, TradesResponse,
+    OraclePriceResponse, OrderSignerEventsResponse, OrderSignerRateLimitResponse, OrdersResponse,
+    PerpContractResponse, PerpPriceResponse, PortfolioCalendarResponse, PortfolioHistoryResponse,
+    PortfolioResponse, PositionsResponse, ProductSnapshot, ProductsResponse, Query, QueryV2,
+    QuotePriceResponse, SubaccountsResponse, TickerResponse, TickersParams, TradesResponse,
 };
 use crate::indexer::{FastWithdrawalSignatureResponse, LiquidatableAccount};
 use crate::serialize_utils::{WrappedU32, WrappedU64};
@@ -159,6 +159,28 @@ pub trait NadoIndexer: NadoBase {
         limit: Option<u32>,
     ) -> Result<LinkedSignerResponse> {
         let query = Query::LinkedSigners {
+            start_idx: wrapped_option_u64(start_idx),
+            limit: limit.map(WrappedU32),
+        };
+        self.query(query).await
+    }
+
+    async fn get_order_signer_rate_limit(
+        &self,
+        subaccount: [u8; 32],
+    ) -> Result<OrderSignerRateLimitResponse> {
+        let query = Query::OrderSignerRateLimit { subaccount };
+        self.query(query).await
+    }
+
+    async fn get_order_signer_events(
+        &self,
+        subaccount: Option<[u8; 32]>,
+        start_idx: Option<u64>,
+        limit: Option<u32>,
+    ) -> Result<OrderSignerEventsResponse> {
+        let query = Query::OrderSignerEvents {
+            subaccount,
             start_idx: wrapped_option_u64(start_idx),
             limit: limit.map(WrappedU32),
         };

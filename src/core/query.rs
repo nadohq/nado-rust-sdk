@@ -9,8 +9,9 @@ use crate::engine::{
     LinkedSignerResponse, MarketLiquidityResponse, MarketPairsParams, MarketPairsResponse,
     MarketPriceResponse, MarketPricesResponse, MaxNlpBurnableResponse, MaxNlpMintableResponse,
     MaxOrderSizeResponse, MaxWithdrawableResponse, NlpLockedBalancesResponse, NlpPoolInfoResponse,
-    NoncesResponse, OrderResponse, OrderbookParams, OrderbookResponse, Query, QueryResponseData,
-    QueryV2, SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse, Txn,
+    NoncesResponse, OrderResponse, OrderSignersResponse, OrderbookParams, OrderbookResponse, Query,
+    QueryResponseData, QueryV2, SubaccountInfoResponse, SubaccountOrdersResponse, SymbolsResponse,
+    Txn,
 };
 use crate::trigger;
 use crate::trigger::{ListTriggerOrdersResponse, ListTwapExecutionsResponse};
@@ -50,6 +51,11 @@ pub trait NadoQuery: NadoBase + Sync {
     async fn get_linked_signer(&self, subaccount: [u8; 32]) -> Result<LinkedSignerResponse> {
         let query_response = self.query(Query::LinkedSigner { subaccount }).await?;
         map_response!(query_response, QueryResponseData::LinkedSigner)
+    }
+
+    async fn get_order_signers(&self, subaccount: [u8; 32]) -> Result<OrderSignersResponse> {
+        let query_response = self.query(Query::OrderSigners { subaccount }).await?;
+        map_response!(query_response, QueryResponseData::OrderSigners)
     }
 
     async fn get_subaccount_info(&self, subaccount: [u8; 32]) -> Result<SubaccountInfoResponse> {

@@ -9,8 +9,9 @@ use crate::builders::execute::deposit_collateral::DepositCollateralParams;
 use crate::builders::execute::slow_mode::SubmitSlowModeTxParams;
 use crate::core::query::NadoQuery;
 use crate::eip712_structs::{
-    BurnNlp, Cancellation, CancellationProducts, DependencyUpdate, LinkSigner, LiquidateSubaccount,
-    MintNlp, TransferQuote, VenueDeposit, VenueTransfer, WithdrawCollateral, WithdrawCollateralV2,
+    AddOrderSigner, BurnNlp, Cancellation, CancellationProducts, DeleteOrderSigner,
+    DependencyUpdate, LinkSigner, LiquidateSubaccount, MintNlp, TransferQuote, VenueDeposit,
+    VenueTransfer, WithdrawCollateral, WithdrawCollateralV2,
 };
 use crate::engine::{
     CancelOrdersResponse, Execute, ExecuteResponseData, PlaceOrder, PlaceOrderResponse,
@@ -236,6 +237,20 @@ pub trait NadoExecute: NadoQuery {
     async fn link_signer(&self, tx: LinkSigner) -> Result<()> {
         let signature = self.endpoint_signature(&tx)?;
         let execute = Execute::LinkSigner { tx, signature };
+        self.execute(execute).await?;
+        Ok(())
+    }
+
+    async fn add_order_signer(&self, tx: AddOrderSigner) -> Result<()> {
+        let signature = self.endpoint_signature(&tx)?;
+        let execute = Execute::AddOrderSigner { tx, signature };
+        self.execute(execute).await?;
+        Ok(())
+    }
+
+    async fn delete_order_signer(&self, tx: DeleteOrderSigner) -> Result<()> {
+        let signature = self.endpoint_signature(&tx)?;
+        let execute = Execute::DeleteOrderSigner { tx, signature };
         self.execute(execute).await?;
         Ok(())
     }

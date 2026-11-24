@@ -19,6 +19,7 @@ pub enum CancelReason {
     DependentOrderCancelled,
     ReduceOnlyCannotIncreasePosition,
     OrderPlacementFailed,
+    OrderSignerDeleted,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
@@ -382,6 +383,7 @@ pub enum Execute {
 pub enum Query {
     ListTriggerOrders {
         tx: ListTriggerOrders,
+        #[serde(default)]
         signature: Bytes,
         product_ids: Option<Vec<u32>>,
         trigger_types: Option<Vec<TriggerType>>,

@@ -7,18 +7,20 @@ use crate::bindings::querier::{
     BookInfo, HealthInfo, PerpBalance, PerpProduct, ProductInfo, Risk, SpotBalance, SubaccountInfo,
 };
 use crate::eip712_structs::{
-    BurnNlp, Cancellation, CancellationProducts, LinkSigner, LiquidateSubaccount, MintNlp, Order,
-    TransferQuote, VenueDeposit, VenueTransfer, WithdrawCollateral, WithdrawCollateralV2,
+    AddOrderSigner, BurnNlp, Cancellation, CancellationProducts, DeleteOrderSigner, LinkSigner,
+    LiquidateSubaccount, MintNlp, Order, TransferQuote, VenueDeposit, VenueTransfer,
+    WithdrawCollateral, WithdrawCollateralV2,
 };
 use crate::product::Product;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_i128, deserialize_nested_vec_i128,
     deserialize_option_bytes32, deserialize_option_i128, deserialize_option_vec_u8,
-    deserialize_u128, deserialize_u64, deserialize_u64_keyed_map, deserialize_vec_bytes32,
-    deserialize_vec_i128, deserialize_vec_u8, opt_str_or_u32, serialize_bytes20, serialize_bytes32,
-    serialize_i128, serialize_nested_vec_i128, serialize_option_bytes32, serialize_option_i128,
-    serialize_option_vec_u8, serialize_u128, serialize_u64, serialize_u64_keyed_map,
-    serialize_vec_bytes32, serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
+    deserialize_u128, deserialize_u64, deserialize_u64_keyed_map, deserialize_vec_bytes20,
+    deserialize_vec_bytes32, deserialize_vec_i128, deserialize_vec_u8, opt_str_or_u32,
+    serialize_bytes20, serialize_bytes32, serialize_i128, serialize_nested_vec_i128,
+    serialize_option_bytes32, serialize_option_i128, serialize_option_vec_u8, serialize_u128,
+    serialize_u64, serialize_u64_keyed_map, serialize_vec_bytes20, serialize_vec_bytes32,
+    serialize_vec_i128, serialize_vec_u8, str_or_u32, WrappedI128,
 };
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
@@ -80,6 +82,14 @@ pub enum Query {
     },
 
     LinkedSigner {
+        #[serde(
+            serialize_with = "serialize_bytes32",
+            deserialize_with = "deserialize_bytes32"
+        )]
+        subaccount: [u8; 32],
+    },
+
+    OrderSigners {
         #[serde(
             serialize_with = "serialize_bytes32",
             deserialize_with = "deserialize_bytes32"
@@ -394,6 +404,22 @@ pub enum Execute {
     },
     LinkSigner {
         tx: LinkSigner,
+        #[serde(
+            serialize_with = "serialize_vec_u8",
+            deserialize_with = "deserialize_vec_u8"
+        )]
+        signature: Vec<u8>,
+    },
+    AddOrderSigner {
+        tx: AddOrderSigner,
+        #[serde(
+            serialize_with = "serialize_vec_u8",
+            deserialize_with = "deserialize_vec_u8"
+        )]
+        signature: Vec<u8>,
+    },
+    DeleteOrderSigner {
+        tx: DeleteOrderSigner,
         #[serde(
             serialize_with = "serialize_vec_u8",
             deserialize_with = "deserialize_vec_u8"
@@ -909,6 +935,27 @@ pub struct LinkedSignerResponse {
         deserialize_with = "deserialize_bytes20"
     )]
     pub linked_signer: [u8; 20],
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
+#[archive(check_bytes)]
+pub struct OrderSignersResponse {
+    #[serde(
+        serialize_with = "serialize_vec_bytes20",
+        deserialize_with = "deserialize_vec_bytes20"
+    )]
+    pub order_signers: Vec<[u8; 20]>,
 }
 
 #[derive(
@@ -1803,6 +1850,7 @@ pub enum QueryResponseData {
     FeeRates(FeeRatesResponse),
     Nonces(NoncesResponse),
     LinkedSigner(LinkedSignerResponse),
+    OrderSigners(OrderSignersResponse),
     SubaccountInfo(SubaccountInfoResponse),
     MarketPrice(MarketPriceResponse),
     MarketPrices(MarketPricesResponse),

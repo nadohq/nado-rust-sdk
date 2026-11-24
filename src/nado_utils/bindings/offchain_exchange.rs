@@ -101,7 +101,7 @@ sol! {
         function dropDigest(bytes32 digest) external;
         function dropOrder(uint32 product_id, Order order) external;
         function dropOrderChecked(uint32 product_id, Order order) external;
-        function dumpFees() external;
+        function dumpFees(uint32[] spot_ids, uint32[] perp_ids) external;
         function filledAmounts(bytes32 digest) external view returns (int128);
         function getAllFeeTiers(address[] users) external view returns (uint32[]);
         function getBuilder(uint32 builder_id) external view returns (Builder);

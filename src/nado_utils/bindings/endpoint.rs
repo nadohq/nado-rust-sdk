@@ -226,6 +226,13 @@ sol! {
         }
 
         #[derive(serde::Serialize, serde::Deserialize)]
+        struct Signers {
+            address linked_signer;
+            uint32 order_signer_count;
+            address[15] order_signers;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
         struct LiquidateSubaccount {
             bytes32 sender;
             bytes32 liquidatee;
@@ -267,6 +274,12 @@ sol! {
             uint128 time;
             #[serde(serialize_with = "crate::serialize_utils::serialize_vec_i128", deserialize_with = "crate::serialize_utils::deserialize_vec_i128")]
             int128[] avg_price_diffs;
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
+        struct DumpFeesV2 {
+            uint32[] spot_ids;
+            uint32[] perp_ids;
         }
 
         #[derive(serde::Serialize, serde::Deserialize)]
@@ -521,6 +534,13 @@ sol! {
         function getEndpointTx() external view returns (address);
         function getHealthCheckFee() external pure returns (int128);
         function getLinkedSigner(bytes32 subaccount) external view returns (address);
+        function getSigners(bytes32 subaccount) external view returns (Signers);
+        function isOrderSigner(bytes32 subaccount, address wallet) external view returns (bool);
+        function addOrderSigner(bytes32 subaccount, address wallet) external;
+        function deleteOrderSigner(bytes32 subaccount, address wallet) external;
+        function addNlpPool(address owner, uint128 balanceWeightX18) external;
+        function updateNlpPool(uint64 poolId, address owner, uint128 balanceWeightX18) external;
+        function deleteNlpPool(uint64 poolId) external;
         function getLiquidationFee() external pure returns (int128);
         function getNlpPools() external view returns (NlpPool[]);
         function getNonce(address sender) external view returns (uint64);
