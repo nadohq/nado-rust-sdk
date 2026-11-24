@@ -92,5 +92,20 @@ Then run the example:
 cargo run --example place_order_websocket --features ws
 ```
 
+## Contributing
+
+The code in this repo is generated from the Nado monorepo and synced here on each release, so
+changes merged directly into `src/` or `Cargo.toml` would be overwritten. Please open an issue
+describing the bug or feature instead; pull requests are welcome as a reference, and accepted
+changes are ported upstream and ship in the next release.
+
+## Security
+
+Please don't report vulnerabilities in public issues or pull requests. Report them through
+[Nado on HackenProof](https://hackenproof.com/companies/nado):
+
+- [Nado Smart Contracts](https://hackenproof.com/programs/nado-smart-contracts)
+- [Nado Web](https://hackenproof.com/programs/nado-web)
+
 [crates-img]: https://img.shields.io/crates/v/nado-sdk
 [crates-url]: https://crates.io/crates/nado-sdk
