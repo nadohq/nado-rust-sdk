@@ -1,5 +1,5 @@
 use alloy_primitives::{Bytes, B256};
-use eyre::{eyre, Result};
+use eyre::{ensure, eyre, Result};
 
 use crate::bindings::endpoint;
 use crate::eip712_structs;
@@ -144,9 +144,9 @@ nado_builder!(
         if reduce_only {
             appendix |= 1 << 11;
         }
-        if self.isolated.is_some() && self.isolated.unwrap() {
+        if self.isolated.unwrap_or(false) {
             appendix |= 1 << 8;
-            let margin_x6 = self.margin.unwrap() / ONE_X12;
+            let margin_x6 = self.margin.ok_or(none_error("margin"))? / ONE_X12;
             appendix |= (margin_x6 as u128) << 64;
         }
         appendix |= order_type.appendix_bit();
@@ -156,8 +156,8 @@ nado_builder!(
             match trigger {
                 TriggerCriteria::PriceTrigger {..} => { appendix |= 1 << 12;},
                 TriggerCriteria::TimeTrigger {amounts, ..} => {
-                    assert!(!self.isolated.unwrap_or(false), "time trigger orders cannot be isolated");
-                    let times = self.times.unwrap();
+                    ensure!(!self.isolated.unwrap_or(false), "time trigger orders cannot be isolated");
+                    let times = self.times.ok_or(none_error("times"))?;
                     let slippage_x6 = self.slippage_x6.ok_or(none_error("slippage_x6"))?;
 
                     appendix |= (times as u128) << 96;
@@ -175,8 +175,10 @@ nado_builder!(
             appendix |= (builder_fee_rate as u128) << 38;
         }
 
-        let default_sender = self.nado.subaccount()?;
-        let sender = self.linked_sender.unwrap_or(default_sender);
+        let sender = match self.linked_sender {
+            Some(sender) => sender,
+            None => self.nado.subaccount()?,
+        };
 
         Ok(eip712_structs::Order::from_binding(&endpoint::Order {
             sender: sender.into(),
@@ -205,3 +207,35 @@ fn random_digest() -> [u8; 32] {
 }
 
 const ORDER_VERSION: u8 = 1;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::eip712_structs::OrderType;
+    use crate::nado_client::NadoClient;
+    use crate::prelude::ClientMode;
+
+    fn order(client: &NadoClient) -> PlaceOrderBuilder<'_, NadoClient> {
+        PlaceOrderBuilder::new(client)
+            .product_id(1)
+            .amount(100)
+            .price_x18(2000)
+            .expiration(1000)
+            .reduce_only(false)
+            .order_type(OrderType::Default)
+            .linked_sender([1u8; 32])
+    }
+
+    #[test]
+    fn isolated_order_without_margin_errors() {
+        let client = NadoClient::new(ClientMode::Test);
+        let err = order(&client).isolated(true).order_inner().unwrap_err();
+        assert_eq!(err.to_string(), "margin is None!");
+    }
+
+    #[test]
+    fn linked_sender_needs_no_wallet() {
+        let client = NadoClient::new(ClientMode::Test);
+        assert!(order(&client).order_inner().is_ok());
+    }
+}

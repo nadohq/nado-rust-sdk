@@ -1633,12 +1633,6 @@ pub struct SymbolsResponseV2 {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exchange_rate_x18: Option<WrappedI128>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub boost_type: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub taker_multiplier: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub maker_multiplier: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub price_feed: Option<PriceFeed>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub token: Option<SymbolToken>,

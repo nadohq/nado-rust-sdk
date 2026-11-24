@@ -60,7 +60,17 @@ Add the following line to your Cargo.toml file:
 
 ```toml
 [dependencies]
-nado_sdk = "3.1.0"
+nado_sdk = "4.0.0"
+```
+
+### TLS backend
+
+HTTP requests use `native-tls` by default. To use Rustls instead, disable default features and
+enable `reqwest-rustls`:
+
+```toml
+[dependencies]
+nado_sdk = { version = "4.0.0", default-features = false, features = ["reqwest-rustls"] }
 ```
 
 ## Usage

@@ -19,15 +19,11 @@ nado_builder!(
     build_and_call!(self, query, get_nlp_snapshots => NlpSnapshotsResponse);
 
     pub fn build(&self) -> Result<indexer::Query> {
-        let interval = if self.granularity.is_some() && self.count.is_some() {
-            Some(Interval {
-                count: self.count.unwrap(),
-                granularity: self.granularity.unwrap(),
-                max_time: wrapped_option_u64(self.max_time),
-            })
-        } else {
-            None
-        };
+        let interval = self.count.zip(self.granularity).map(|(count, granularity)| Interval {
+            count,
+            granularity,
+            max_time: wrapped_option_u64(self.max_time),
+        });
 
         Ok(indexer::Query::NlpSnapshots {
             interval,
