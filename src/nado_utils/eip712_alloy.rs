@@ -4,10 +4,11 @@ use alloy_primitives::{Address, FixedBytes};
 use alloy_sol_types::SolStruct;
 
 use crate::eip712_structs::{
-    BurnNlp, Cancellation, CancellationProducts, DependencyUpdate, LeaderboardAuthentication,
-    LinkSigner, LiquidateSubaccount, ListTriggerOrders, MintNlp, NadoAuthentication, Order,
-    SocialAuthentication, StreamAuthentication, TransferQuote, VenueDeposit, VenueTransfer,
-    WithdrawCollateral, WithdrawCollateralV2,
+    AddOrderSigner, BurnNlp, Cancellation, CancellationProducts, DeleteOrderSigner,
+    DependencyUpdate, LeaderboardAuthentication, LinkSigner, LiquidateSubaccount,
+    ListTriggerOrders, MintNlp, NadoAuthentication, Order, SocialAuthentication,
+    StreamAuthentication, TransferQuote, VenueDeposit, VenueTransfer, WithdrawCollateral,
+    WithdrawCollateralV2,
 };
 
 pub mod sol_types {
@@ -16,6 +17,8 @@ pub mod sol_types {
         struct Cancellation { bytes32 sender; uint32[] productIds; bytes32[] digests; uint64 nonce; }
         struct CancellationProducts { bytes32 sender; uint32[] productIds; uint64 nonce; }
         struct LinkSigner { bytes32 sender; bytes32 signer; uint64 nonce; }
+        struct AddOrderSigner { bytes32 sender; bytes32 signer; uint64 nonce; }
+        struct DeleteOrderSigner { bytes32 sender; bytes32 signer; uint64 nonce; }
         struct LiquidateSubaccount { bytes32 sender; bytes32 liquidatee; uint32 productId; bool isEncodedSpread; int128 amount; uint64 nonce; }
         struct WithdrawCollateral { bytes32 sender; uint32 productId; uint128 amount; uint64 nonce; }
         struct WithdrawCollateralV2 { bytes32 sender; uint32 productId; uint128 amount; uint64 nonce; address sendTo; uint128 appendix; }
@@ -101,16 +104,25 @@ impl NadoEip712 for CancellationProducts {
     }
 }
 
-impl NadoEip712 for LinkSigner {
-    type Sol = sol_types::LinkSigner;
-    fn to_sol(&self) -> Self::Sol {
-        sol_types::LinkSigner {
-            sender: fb(self.sender),
-            signer: fb(self.signer),
-            nonce: self.nonce,
+// the sol! struct name is what gives each of the three its own type hash
+macro_rules! signer_tx_eip712 {
+    ($name:ident) => {
+        impl NadoEip712 for $name {
+            type Sol = sol_types::$name;
+            fn to_sol(&self) -> Self::Sol {
+                sol_types::$name {
+                    sender: fb(self.sender),
+                    signer: fb(self.signer),
+                    nonce: self.nonce,
+                }
+            }
         }
-    }
+    };
 }
+
+signer_tx_eip712!(LinkSigner);
+signer_tx_eip712!(AddOrderSigner);
+signer_tx_eip712!(DeleteOrderSigner);
 
 impl NadoEip712 for LiquidateSubaccount {
     type Sol = sol_types::LiquidateSubaccount;

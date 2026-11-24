@@ -1,6 +1,8 @@
+pub mod add_order_signer;
 pub mod burn_nlp;
 pub mod cancellation;
 pub mod cancellation_products;
+pub mod delete_order_signer;
 pub mod deposit_collateral;
 pub mod deposit_insurance;
 pub mod link_signer;

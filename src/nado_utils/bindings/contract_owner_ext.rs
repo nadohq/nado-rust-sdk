@@ -8,7 +8,6 @@ sol! {
     contract ContractOwnerExt {
         function addNlpPool(address owner, uint128 balanceWeightX18) external;
         function updateNlpPool(uint64 poolId, address owner, uint128 weight) external;
-        function deleteNlpPool(uint64 poolId) external;
         function forceRebalanceNlpPool(int128[] nlp_pool_rebalance_x18) external;
         function nlpProfitShare(uint64 pool_id, bytes32 recipient, uint128 amount) external;
         function updateTierFeeRates(uint32[] tier, uint32[] productId, int128[] makerRateX18, int128[] takerRateX18) external;

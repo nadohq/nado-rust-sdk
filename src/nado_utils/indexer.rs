@@ -4,11 +4,11 @@ use crate::eip712_structs;
 use crate::engine::TradingStatus;
 use crate::serialize_utils::{
     deserialize_bytes20, deserialize_bytes32, deserialize_f64, deserialize_i128, deserialize_i64,
-    deserialize_option_bytes32, deserialize_option_i128, deserialize_option_i64, deserialize_u128,
-    deserialize_u64, deserialize_vec_bytes20, serialize_bytes20, serialize_bytes32, serialize_f64,
-    serialize_i128, serialize_i64, serialize_option_bytes32, serialize_option_i128,
-    serialize_option_i64, serialize_u128, serialize_u64, serialize_vec_bytes20, WrappedBytes32,
-    WrappedI128, WrappedU32, WrappedU64,
+    deserialize_option_bytes32, deserialize_option_hex_or_array_bytes32, deserialize_option_i128,
+    deserialize_option_i64, deserialize_u128, deserialize_u64, deserialize_vec_bytes20,
+    serialize_bytes20, serialize_bytes32, serialize_f64, serialize_i128, serialize_i64,
+    serialize_option_bytes32, serialize_option_i128, serialize_option_i64, serialize_u128,
+    serialize_u64, serialize_vec_bytes20, WrappedBytes32, WrappedI128, WrappedU32, WrappedU64,
 };
 use crate::tx::{NadoTx, TxType};
 use alloy_primitives::Address;
@@ -98,6 +98,7 @@ pub enum Query {
         idx: Option<WrappedU64>,
         isolated: Option<bool>,
         trigger_types: Option<Vec<crate::trigger::TriggerType>>,
+        is_otc: Option<bool>,
     },
 
     Positions {
@@ -190,7 +191,27 @@ pub enum Query {
         limit: Option<WrappedU32>,
     },
 
+    OrderSignerRateLimit {
+        #[serde(
+            deserialize_with = "deserialize_bytes32",
+            serialize_with = "serialize_bytes32"
+        )]
+        subaccount: [u8; 32],
+    },
+
+    OrderSignerEvents {
+        #[serde(
+            default,
+            deserialize_with = "deserialize_option_bytes32",
+            serialize_with = "serialize_option_bytes32"
+        )]
+        subaccount: Option<[u8; 32]>,
+        start_idx: Option<WrappedU64>,
+        limit: Option<WrappedU32>,
+    },
+
     IsolatedSubaccounts {
+        #[serde(default, deserialize_with = "deserialize_option_hex_or_array_bytes32")]
         subaccount: Option<[u8; 32]>,
         start_idx: Option<WrappedU64>,
         limit: Option<WrappedU32>,
@@ -747,6 +768,8 @@ pub struct Order {
     pub last_fill_timestamp: u64,
     pub pre_balance: MatchBalances,
     pub post_balance: MatchBalances,
+    #[serde(default)]
+    pub is_otc: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -1124,6 +1147,8 @@ pub struct Match {
         deserialize_with = "deserialize_option_i128"
     )]
     pub margin: Option<i128>,
+    #[serde(default)]
+    pub is_otc: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -1266,6 +1291,43 @@ pub struct LinkedSigner {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LinkedSignerResponse {
     pub events: Vec<LinkedSigner>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OrderSignerRateLimitResponse {
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub remaining_tx: u64,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub wait_time: u64,
+    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+    pub total_tx_limit: u64,
+    #[serde(
+        serialize_with = "serialize_vec_bytes20",
+        deserialize_with = "deserialize_vec_bytes20"
+    )]
+    pub order_signers: Vec<[u8; 20]>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct OrderSignerEvent {
+    #[serde(
+        serialize_with = "serialize_bytes32",
+        deserialize_with = "deserialize_bytes32"
+    )]
+    pub subaccount: [u8; 32],
+    #[serde(
+        serialize_with = "serialize_bytes20",
+        deserialize_with = "deserialize_bytes20"
+    )]
+    pub signer: [u8; 20],
+    pub submission_idx: i64,
+    pub added: bool,
+    pub update_time: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OrderSignerEventsResponse {
+    pub events: Vec<OrderSignerEvent>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1564,6 +1626,8 @@ pub struct SymbolsResponseV2 {
     pub long_weight_maintenance_x18: i128,
     pub max_open_interest_x18: Option<WrappedI128>,
     pub trading_status: TradingStatus,
+    #[serde(default)]
+    pub trading_status_updated_at: Option<i64>,
     pub isolated_only: bool,
     pub market_hours: Option<MarketHours>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1576,6 +1640,14 @@ pub struct SymbolsResponseV2 {
     pub maker_multiplier: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub price_feed: Option<PriceFeed>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub token: Option<SymbolToken>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct SymbolToken {
+    pub address: String,
+    pub decimals: u8,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -1742,4 +1814,96 @@ pub type BacklogResponse = BacklogData;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DirectDepositAddressResponse {
     pub v1_address: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SUBACCOUNT_HEX: &str =
+        "0x155cf0f200fab0cdc538911b652606bd14d3867664656661756c740000000000";
+
+    fn subaccount() -> [u8; 32] {
+        let mut bytes = [0u8; 32];
+        bytes.copy_from_slice(&hex::decode(&SUBACCOUNT_HEX[2..]).unwrap());
+        bytes
+    }
+
+    fn isolated_subaccounts_filter(body: &str) -> serde_json::Result<Option<[u8; 32]>> {
+        match serde_json::from_str::<Query>(body)? {
+            Query::IsolatedSubaccounts { subaccount, .. } => Ok(subaccount),
+            other => panic!("parsed into the wrong query: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn isolated_subaccounts_accepts_hex_subaccount() {
+        let body =
+            format!(r#"{{"isolated_subaccounts":{{"subaccount":"{SUBACCOUNT_HEX}","limit":5}}}}"#);
+        assert_eq!(
+            isolated_subaccounts_filter(&body).unwrap(),
+            Some(subaccount())
+        );
+
+        let upper = format!("0x{}", SUBACCOUNT_HEX[2..].to_uppercase());
+        let body = format!(r#"{{"isolated_subaccounts":{{"subaccount":"{upper}"}}}}"#);
+        assert_eq!(
+            isolated_subaccounts_filter(&body).unwrap(),
+            Some(subaccount())
+        );
+    }
+
+    #[test]
+    fn isolated_subaccounts_accepts_byte_array_subaccount() {
+        let body = serde_json::json!({
+            "isolated_subaccounts": { "subaccount": subaccount().to_vec(), "limit": 5 }
+        })
+        .to_string();
+        assert_eq!(
+            isolated_subaccounts_filter(&body).unwrap(),
+            Some(subaccount())
+        );
+    }
+
+    #[test]
+    fn isolated_subaccounts_round_trips_sdk_query() {
+        let query = Query::IsolatedSubaccounts {
+            subaccount: Some(subaccount()),
+            start_idx: None,
+            limit: None,
+        };
+        let body = serde_json::to_string(&query).unwrap();
+        assert_eq!(
+            isolated_subaccounts_filter(&body).unwrap(),
+            Some(subaccount())
+        );
+    }
+
+    #[test]
+    fn isolated_subaccounts_subaccount_is_optional() {
+        assert_eq!(
+            isolated_subaccounts_filter(r#"{"isolated_subaccounts":{"limit":5}}"#).unwrap(),
+            None
+        );
+        assert_eq!(
+            isolated_subaccounts_filter(r#"{"isolated_subaccounts":{"subaccount":null}}"#).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn isolated_subaccounts_rejects_malformed_subaccount() {
+        for bad in [
+            r#""0x1234""#,
+            r#""not hex""#,
+            "[1,2,3]",
+            "[256,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+        ] {
+            let body = format!(r#"{{"isolated_subaccounts":{{"subaccount":{bad}}}}}"#);
+            assert!(
+                isolated_subaccounts_filter(&body).is_err(),
+                "accepted {bad}"
+            );
+        }
+    }
 }

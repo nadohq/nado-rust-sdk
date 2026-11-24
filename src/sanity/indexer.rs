@@ -37,6 +37,14 @@ pub async fn indexer_sanity_check() -> Result<()> {
     let linked_signers = client.get_linked_signers(Some(100), Some(10)).await?;
     print_json!(linked_signers);
 
+    let order_signer_rate_limit = client.get_order_signer_rate_limit([0; 32]).await?;
+    print_json!(order_signer_rate_limit);
+
+    let order_signer_events = client
+        .get_order_signer_events(None, Some(100), Some(10))
+        .await?;
+    print_json!(order_signer_events);
+
     let perp_prices = client.get_perp_prices(vec![2]).await?;
     print_json!(perp_prices);
 

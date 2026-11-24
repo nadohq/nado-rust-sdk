@@ -57,6 +57,9 @@ pub enum TxType {
     VenueTransfer = 38,
     UpdateVenue = 39,
     MatchOrdersV2 = 40,
+    AddOrderSigner = 41,
+    DeleteOrderSigner = 42,
+    DumpFeesV2 = 43,
 }
 
 impl TxType {
@@ -103,6 +106,9 @@ impl TxType {
             38 => Self::VenueTransfer,
             39 => Self::UpdateVenue,
             40 => Self::MatchOrdersV2,
+            41 => Self::AddOrderSigner,
+            42 => Self::DeleteOrderSigner,
+            43 => Self::DumpFeesV2,
             _ => panic!("Invalid TxType"),
         }
     }
@@ -170,6 +176,9 @@ pub fn domain2(chain_id: u64, verifying_contract: [u8; 20]) -> EIP712Domain {
 pub enum NadoTx {
     LiquidateSubaccount(endpoint::LiquidateSubaccount),
     LinkSigner(endpoint::LinkSigner),
+    // same ABI layout as LinkSigner; the tx type byte is the only difference
+    AddOrderSigner(endpoint::LinkSigner),
+    DeleteOrderSigner(endpoint::LinkSigner),
 
     DepositCollateral(endpoint::DepositCollateral),
     WithdrawCollateral(endpoint::WithdrawCollateral),
@@ -210,6 +219,7 @@ pub enum NadoTx {
     VenueDeposit(endpoint::VenueDeposit),
     VenueTransfer(endpoint::VenueTransfer),
     UpdateVenue(endpoint::UpdateVenue),
+    DumpFeesV2,
     Other,
 }
 
@@ -230,6 +240,8 @@ impl NadoTx {
             NadoTx::ManualAssert(_) => TxType::ManualAssert,
             NadoTx::PerpTick(_) => TxType::PerpTick,
             NadoTx::LinkSigner(_) => TxType::LinkSigner,
+            NadoTx::AddOrderSigner(_) => TxType::AddOrderSigner,
+            NadoTx::DeleteOrderSigner(_) => TxType::DeleteOrderSigner,
             NadoTx::TransferQuote(_) => TxType::TransferQuote,
             NadoTx::TransferQuoteV2(_) => TxType::TransferQuoteV2,
             NadoTx::RebalanceXWithdraw(_) => TxType::RebalanceXWithdraw,
@@ -237,6 +249,7 @@ impl NadoTx {
             NadoTx::WithdrawInsurance(_) => TxType::WithdrawInsurance,
             NadoTx::DelistProduct(_) => TxType::DelistProduct,
             NadoTx::DumpFees => TxType::DumpFees,
+            NadoTx::DumpFeesV2 => TxType::DumpFeesV2,
             NadoTx::CreateIsolatedSubaccount(_) => TxType::CreateIsolatedSubaccount,
             NadoTx::MintNlp(_) => TxType::MintNlp,
             NadoTx::BurnNlp(_) => TxType::BurnNlp,

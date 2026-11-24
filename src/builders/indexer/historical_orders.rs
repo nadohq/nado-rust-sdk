@@ -20,7 +20,8 @@ nado_builder!(
     limit: u32,
     idx: u64,
     digests: Vec<[u8; 32]>,
-    isolated: bool;
+    isolated: bool,
+    is_otc: bool;
 
     build_and_call!(self, query, get_historical_orders => OrdersResponse);
 
@@ -38,6 +39,7 @@ nado_builder!(
             idx: wrapped_option_u64(self.idx),
             isolated: self.isolated,
             trigger_types,
+            is_otc: self.is_otc,
         })
     }
 

@@ -599,6 +599,28 @@ where
     )
 }
 
+// Accepts the raw byte-array form because the Rust SDK has always serialized this field that way.
+pub fn deserialize_option_hex_or_array_bytes32<'de, D>(
+    deserializer: D,
+) -> Result<Option<[u8; 32]>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum HexOrArray {
+        Hex(WrappedBytes32),
+        Array([u8; 32]),
+    }
+
+    Ok(
+        Option::<HexOrArray>::deserialize(deserializer)?.map(|value| match value {
+            HexOrArray::Hex(wrapped) => wrapped.0,
+            HexOrArray::Array(bytes) => bytes,
+        }),
+    )
+}
+
 pub fn serialize_option_bytes32<S>(
     value: &Option<[u8; 32]>,
     serializer: S,

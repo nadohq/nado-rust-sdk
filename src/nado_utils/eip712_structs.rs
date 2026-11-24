@@ -320,44 +320,56 @@ impl CancellationProducts {
     }
 }
 
-#[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
-#[archive(check_bytes)]
-#[allow(non_snake_case)]
-pub struct LinkSigner {
-    #[serde(
-        serialize_with = "serialize_bytes32",
-        deserialize_with = "deserialize_bytes32"
-    )]
-    pub sender: [u8; 32],
-    #[serde(
-        serialize_with = "serialize_bytes32",
-        deserialize_with = "deserialize_bytes32"
-    )]
-    pub signer: [u8; 32],
-    #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
-    pub nonce: u64,
+/// `LinkSigner`, `AddOrderSigner`, and `DeleteOrderSigner` share one field layout
+/// and ABI encoding on purpose: the contract decodes all three as
+/// `SignedLinkSigner` and branches on the tx type byte, so they must not drift.
+/// Each keeps its own EIP-712 type hash (see `eip712_alloy`).
+macro_rules! signer_tx {
+    ($name:ident) => {
+        #[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
+        #[archive(check_bytes)]
+        #[allow(non_snake_case)]
+        pub struct $name {
+            #[serde(
+                serialize_with = "serialize_bytes32",
+                deserialize_with = "deserialize_bytes32"
+            )]
+            pub sender: [u8; 32],
+            #[serde(
+                serialize_with = "serialize_bytes32",
+                deserialize_with = "deserialize_bytes32"
+            )]
+            pub signer: [u8; 32],
+            #[serde(serialize_with = "serialize_u64", deserialize_with = "deserialize_u64")]
+            pub nonce: u64,
+        }
+
+        impl $name {
+            pub fn to_binding(&self) -> endpoint::LinkSigner {
+                endpoint::LinkSigner {
+                    sender: self.sender.into(),
+                    signer: self.signer.into(),
+                    nonce: self.nonce,
+                }
+            }
+
+            pub fn to_signed_binding(&self, signature: &Bytes) -> endpoint::SignedLinkSigner {
+                endpoint::SignedLinkSigner {
+                    tx: self.to_binding(),
+                    signature: signature.clone(),
+                }
+            }
+
+            pub fn recv_time(&self) -> u64 {
+                self.nonce >> 20
+            }
+        }
+    };
 }
 
-impl LinkSigner {
-    pub fn to_binding(&self) -> endpoint::LinkSigner {
-        endpoint::LinkSigner {
-            sender: self.sender.into(),
-            signer: self.signer.into(),
-            nonce: self.nonce,
-        }
-    }
-
-    pub fn to_signed_binding(&self, signature: &Bytes) -> endpoint::SignedLinkSigner {
-        endpoint::SignedLinkSigner {
-            tx: self.to_binding(),
-            signature: signature.clone(),
-        }
-    }
-
-    pub fn recv_time(&self) -> u64 {
-        self.nonce >> 20
-    }
-}
+signer_tx!(LinkSigner);
+signer_tx!(AddOrderSigner);
+signer_tx!(DeleteOrderSigner);
 
 #[derive(Archive, RkyvDeserialize, RkyvSerialize, Serialize, Deserialize, Debug, Clone)]
 #[archive(check_bytes)]
